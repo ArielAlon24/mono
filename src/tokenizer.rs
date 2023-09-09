@@ -24,10 +24,12 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
     }
 
     fn next_identifier(&mut self, c: char) -> Option<Result<Token, Error>> {
+        let column = self.column;
         let mut identifier = String::from(c);
         loop {
             match self.chars.peek() {
                 Some(&c) if c.is_ascii_alphabetic() || c.is_numeric() || c == '_' => {
+                    self.column += 1;
                     self.chars.next();
                     identifier.push(c);
                 }
@@ -36,9 +38,13 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
 
         if let Some(kind) = Kind::str_to_identifier(&identifier) {
-            return token!(self, kind);
+            return Some(Ok(Token::new(kind, self.row, column)));
         }
-        token!(self, Kind::Identifier(identifier))
+        return Some(Ok(Token::new(
+            Kind::Identifier(identifier),
+            self.row,
+            column,
+        )));
     }
 }
 
@@ -60,7 +66,9 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
             Some('-') => match self.chars.peek() {
                 Some('>') => {
                     self.chars.next();
-                    token!(self, Kind::Arrow)
+                    let token = token!(self, Kind::Arrow);
+                    self.column += 1;
+                    token
                 }
                 _ => token!(self, Kind::Subtraction),
             },
@@ -71,21 +79,33 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
             Some('=') => match self.chars.peek() {
                 Some('>') => {
                     self.chars.next();
-                    token!(self, Kind::DoubleArrow)
+                    let token = token!(self, Kind::DoubleArrow);
+                    self.column += 1;
+                    token
                 }
-                _ => token!(self, Kind::Equals),
+                Some('=') => {
+                    self.chars.next();
+                    let token = token!(self, Kind::Equals);
+                    self.column += 1;
+                    token
+                }
+                _ => token!(self, Kind::Assignment),
             },
             Some('>') => match self.chars.peek() {
                 Some('=') => {
                     self.chars.next();
-                    token!(self, Kind::GreaterEq)
+                    let token = token!(self, Kind::GreaterEq);
+                    self.column += 1;
+                    token
                 }
                 _ => token!(self, Kind::Greater),
             },
             Some('<') => match self.chars.peek() {
                 Some('=') => {
                     self.chars.next();
-                    token!(self, Kind::LessThanEq)
+                    let token = token!(self, Kind::LessThanEq);
+                    self.column += 1;
+                    token
                 }
                 _ => token!(self, Kind::LessThan),
             },

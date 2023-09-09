@@ -22,7 +22,9 @@
     - [x] Division
     - [x] Modulo
     - [x] Power
+    - [x] Assignment
     - [x] Equals
+    - [ ] NotEquals
     - [x] Greater
     - [x] GreaterEq
     - [x] LessThan
