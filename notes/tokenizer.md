@@ -12,11 +12,11 @@
     - [x] And
     - [x] Or
 
-- [ ] **Built-in Types**
+- [x] **Built-in Types**
     - [x] Character
     - [x] String
-    - [ ] Integer
-    - [ ] Float
+    - [x] Integer
+    - [x] Float
     - [x] Boolean
 
 - [x] **Operators**

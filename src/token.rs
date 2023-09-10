@@ -13,8 +13,8 @@ pub enum Kind {
     // Builtin types
     Character(char),
     String(String),
-    Integer(u32),
-    Float(i32),
+    Integer(i32),
+    Float(f32),
     Boolean(bool),
 
     // Operators

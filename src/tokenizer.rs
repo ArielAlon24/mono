@@ -64,11 +64,11 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(c) if c == '"' => Some(Ok(Token::new(Kind::String(string), self.row, column))),
             Some(c) => Some(Err(Error::InvalidSyntax {
                 expected: vec!['"', '\''],
-                actual: vec![c],
+                actual: Some(c),
             })),
             None => Some(Err(Error::InvalidSyntax {
                 expected: vec!['"', '\''],
-                actual: Vec::new(),
+                actual: None,
             })),
         };
     }
@@ -81,14 +81,14 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(c) if c == '\'' => {
                 return Some(Err(Error::InvalidSyntax {
                     expected: vec!['?'],
-                    actual: vec![c],
+                    actual: Some(c),
                 }))
             }
             Some(c) => result = c,
             None => {
                 return Some(Err(Error::InvalidSyntax {
                     expected: vec!['?'],
-                    actual: Vec::new(),
+                    actual: None,
                 }))
             }
         }
@@ -98,13 +98,54 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some('\'') => Some(Ok(Token::new(Kind::Character(result), self.row, column))),
             Some(c) => Some(Err(Error::InvalidSyntax {
                 expected: vec!['\''],
-                actual: vec![c],
+                actual: Some(c),
             })),
             None => Some(Err(Error::InvalidSyntax {
                 expected: vec!['\''],
-                actual: Vec::new(),
+                actual: None,
             })),
         };
+    }
+
+    fn next_number(&mut self, c: char) -> Option<Result<Token, Error>> {
+        let column = self.column;
+        let mut number = String::from(c);
+        let mut is_float = false;
+
+        loop {
+            match self.chars.peek() {
+                Some(&c) if c.is_numeric() => {
+                    self.chars.next();
+                    self.column += 1;
+                    number.push(c);
+                }
+                Some('.') => {
+                    if !is_float {
+                        self.chars.next();
+                        self.column += 1;
+                        number.push('.');
+                        is_float = true;
+                    } else {
+                        return Some(Err(Error::InvalidSyntax {
+                            expected: vec!['n'],
+                            actual: Some('.'),
+                        }));
+                    }
+                }
+                _ => break,
+            }
+        }
+
+        if is_float {
+            return match number.parse::<f32>() {
+                Ok(float) => Some(Ok(Token::new(Kind::Float(float), self.row, column))),
+                _ => panic!("Couldn't parse float: {:?}", number),
+            };
+        }
+        match number.parse::<i32>() {
+            Ok(int) => Some(Ok(Token::new(Kind::Integer(int), self.row, column))),
+            _ => panic!("Couldn't parse integer: {:?}", number),
+        }
     }
 }
 
@@ -124,6 +165,7 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
             Some(c) if c.is_ascii_alphabetic() || c == '_' => self.next_identifier(c),
             Some(c) if c == '"' => self.next_string(),
             Some(c) if c == '\'' => self.next_char(),
+            Some(c) if c.is_numeric() => self.next_number(c),
             Some('+') => token!(self, Kind::Addition),
             Some('-') => match self.chars.peek() {
                 Some('>') => {
@@ -162,11 +204,11 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
                 }
                 Some(&c) => Some(Err(Error::InvalidSyntax {
                     expected: vec!['='],
-                    actual: vec![c],
+                    actual: Some(c),
                 })),
                 _ => Some(Err(Error::InvalidSyntax {
                     expected: vec!['='],
-                    actual: vec![],
+                    actual: None,
                 })),
             },
             Some('>') => match self.chars.peek() {

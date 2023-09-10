@@ -49,7 +49,28 @@ fn strings_and_chars() {
         Ok(Token::new(Kind::NewLine, 3, 7)),
         Err(Error::InvalidSyntax {
             expected: vec!['\''],
-            actual: vec!['o'],
+            actual: Some('o'),
+        }),
+    ];
+
+    for (actual_token, expected_token) in actual.iter().zip(expected.iter()) {
+        assert_eq!(actual_token, expected_token);
+    }
+}
+
+#[test]
+fn numbers() {
+    //                              1234567890123456789
+    //                              0        1
+    let tokenizer = Tokenizer::new("123 1.23 12.3 1.2.3".chars());
+    let actual: Vec<_> = tokenizer.collect();
+    let expected: Vec<Result<Token, Error>> = vec![
+        Ok(Token::new(Kind::Integer(123), 1, 1)),
+        Ok(Token::new(Kind::Float(1.23), 1, 5)),
+        Ok(Token::new(Kind::Float(12.3), 1, 10)),
+        Err(Error::InvalidSyntax {
+            expected: vec!['n'],
+            actual: Some('.'),
         }),
     ];
 
@@ -107,13 +128,14 @@ fn arrows() {
 fn arrows_and_operators() {
     //          12345
     //          0
-    let code = "-><=>=";
+    let code = "-><=>==>";
     let tokenizer = Tokenizer::new(code.chars());
     let actual: Vec<_> = tokenizer.collect();
     let expected: Vec<Result<Token, Error>> = vec![
         Ok(Token::new(Kind::Arrow, 1, 1)),
         Ok(Token::new(Kind::LessThanEq, 1, 3)),
         Ok(Token::new(Kind::GreaterEq, 1, 5)),
+        Ok(Token::new(Kind::DoubleArrow, 1, 7)),
     ];
 
     for (actual_token, expected_token) in actual.iter().zip(expected.iter()) {
