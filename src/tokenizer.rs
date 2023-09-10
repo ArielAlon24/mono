@@ -46,6 +46,66 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             column,
         )));
     }
+
+    fn next_string(&mut self) -> Option<Result<Token, Error>> {
+        let column = self.column;
+        let mut string = String::new();
+        while let Some(&c) = self.chars.peek() {
+            if c == '"' {
+                break;
+            }
+            self.chars.next();
+            self.column += 1;
+            string.push(c);
+        }
+
+        self.column += 1;
+        return match self.chars.next() {
+            Some(c) if c == '"' => Some(Ok(Token::new(Kind::String(string), self.row, column))),
+            Some(c) => Some(Err(Error::InvalidSyntax {
+                expected: vec!['"', '\''],
+                actual: vec![c],
+            })),
+            None => Some(Err(Error::InvalidSyntax {
+                expected: vec!['"', '\''],
+                actual: Vec::new(),
+            })),
+        };
+    }
+
+    fn next_char(&mut self) -> Option<Result<Token, Error>> {
+        let column = self.column;
+        let result: char;
+        self.column += 1;
+        match self.chars.next() {
+            Some(c) if c == '\'' => {
+                return Some(Err(Error::InvalidSyntax {
+                    expected: vec!['?'],
+                    actual: vec![c],
+                }))
+            }
+            Some(c) => result = c,
+            None => {
+                return Some(Err(Error::InvalidSyntax {
+                    expected: vec!['?'],
+                    actual: Vec::new(),
+                }))
+            }
+        }
+
+        self.column += 1;
+        return match self.chars.next() {
+            Some('\'') => Some(Ok(Token::new(Kind::Character(result), self.row, column))),
+            Some(c) => Some(Err(Error::InvalidSyntax {
+                expected: vec!['\''],
+                actual: vec![c],
+            })),
+            None => Some(Err(Error::InvalidSyntax {
+                expected: vec!['\''],
+                actual: Vec::new(),
+            })),
+        };
+    }
 }
 
 impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
@@ -62,6 +122,8 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
                 token
             }
             Some(c) if c.is_ascii_alphabetic() || c == '_' => self.next_identifier(c),
+            Some(c) if c == '"' => self.next_string(),
+            Some(c) if c == '\'' => self.next_char(),
             Some('+') => token!(self, Kind::Addition),
             Some('-') => match self.chars.peek() {
                 Some('>') => {
@@ -90,6 +152,22 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
                     token
                 }
                 _ => token!(self, Kind::Assignment),
+            },
+            Some('!') => match self.chars.peek() {
+                Some('=') => {
+                    self.chars.next();
+                    let token = token!(self, Kind::NotEquals);
+                    self.column += 1;
+                    token
+                }
+                Some(&c) => Some(Err(Error::InvalidSyntax {
+                    expected: vec!['='],
+                    actual: vec![c],
+                })),
+                _ => Some(Err(Error::InvalidSyntax {
+                    expected: vec!['='],
+                    actual: vec![],
+                })),
             },
             Some('>') => match self.chars.peek() {
                 Some('=') => {

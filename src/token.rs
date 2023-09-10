@@ -4,10 +4,14 @@ pub enum Kind {
     Identifier(String),
 
     // Keywords
+    True,
+    False,
+    None,
     And,
     Or,
 
     // Builtin types
+    Character(char),
     String(String),
     Integer(u32),
     Float(i32),
@@ -47,6 +51,9 @@ impl Kind {
         match identifier {
             "and" => Some(Self::And),
             "or" => Some(Self::Or),
+            "true" => Some(Self::Boolean(true)),
+            "false" => Some(Self::Boolean(false)),
+            "none" => Some(Self::None),
             _ => None,
         }
     }

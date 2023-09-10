@@ -10,9 +10,9 @@ pub fn run(code: &str) {
 
     for token in tokenizer {
         match token {
-            Ok(token) => println!("{:?}", token),
+            Ok(token) => println!("Result: {:?}", token),
             Err(error) => {
-                eprintln!("{:?}", error);
+                eprintln!("Error:  {:?}", error);
                 exit(1);
             }
         }

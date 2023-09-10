@@ -6,14 +6,18 @@
 
 - [x] **Keywords and Identifiers**
     - [x] Identifier(String)
+    - [x] True
+    - [x] False
+    - [x] None
     - [x] And
     - [x] Or
 
 - [ ] **Built-in Types**
-    - [ ] String
+    - [x] Character
+    - [x] String
     - [ ] Integer
     - [ ] Float
-    - [ ] Boolean
+    - [x] Boolean
 
 - [x] **Operators**
     - [x] Addition
@@ -24,7 +28,7 @@
     - [x] Power
     - [x] Assignment
     - [x] Equals
-    - [ ] NotEquals
+    - [x] NotEquals
     - [x] Greater
     - [x] GreaterEq
     - [x] LessThan
