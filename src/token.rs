@@ -1,12 +1,15 @@
+use crate::position::Position;
+
 #[derive(Debug, PartialEq)]
 #[allow(dead_code)]
-pub enum Kind {
+pub enum TokenKind {
     Identifier(String),
 
     // Keywords
     True,
     False,
     None,
+    Not,
     And,
     Or,
 
@@ -46,14 +49,15 @@ pub enum Kind {
     NewLine,
 }
 
-impl Kind {
+impl TokenKind {
     pub fn str_to_identifier(identifier: &str) -> Option<Self> {
         match identifier {
-            "and" => Some(Self::And),
-            "or" => Some(Self::Or),
             "true" => Some(Self::Boolean(true)),
             "false" => Some(Self::Boolean(false)),
             "none" => Some(Self::None),
+            "not" => Some(Self::Not),
+            "and" => Some(Self::And),
+            "or" => Some(Self::Or),
             _ => None,
         }
     }
@@ -61,13 +65,15 @@ impl Kind {
 
 #[derive(Debug, PartialEq)]
 pub struct Token {
-    kind: Kind,
-    row: usize,
-    column: usize,
+    kind: TokenKind,
+    position: Position,
 }
 
 impl Token {
-    pub fn new(kind: Kind, row: usize, column: usize) -> Self {
-        return Self { kind, row, column };
+    pub fn new(kind: TokenKind, row: usize, column: usize) -> Self {
+        return Self {
+            kind,
+            position: Position::new(row, column),
+        };
     }
 }

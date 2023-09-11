@@ -9,6 +9,7 @@
     - [x] True
     - [x] False
     - [x] None
+    - [x] Not
     - [x] And
     - [x] Or
 
