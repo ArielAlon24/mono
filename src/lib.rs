@@ -1,6 +1,4 @@
-pub mod error;
-pub mod position;
-pub mod token;
+pub mod models;
 pub mod tokenizer;
 
 use crate::tokenizer::Tokenizer;

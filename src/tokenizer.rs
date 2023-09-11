@@ -1,6 +1,6 @@
-use crate::error::{Error, ErrorKind};
-use crate::position::Position;
-use crate::token::{Token, TokenKind};
+use crate::models::error::{Error, ErrorKind};
+use crate::models::position::Position;
+use crate::models::token::{Token, TokenKind};
 use core::iter::Peekable;
 
 macro_rules! token {

@@ -1,4 +1,4 @@
-use crate::position::Position;
+use super::position::Position;
 
 #[derive(Debug, PartialEq)]
 pub enum ErrorKind {

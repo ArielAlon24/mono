@@ -1,6 +1,6 @@
-use mono::error::{Error, ErrorKind};
-use mono::position::Position;
-use mono::token::{Token, TokenKind};
+use mono::models::error::{Error, ErrorKind};
+use mono::models::position::Position;
+use mono::models::token::{Token, TokenKind};
 use mono::tokenizer::Tokenizer;
 
 #[test]
