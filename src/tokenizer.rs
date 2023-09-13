@@ -10,8 +10,12 @@ macro_rules! token {
 }
 
 macro_rules! error {
-    ($self:ident, $ErrorKind:expr) => {
-        Some(Err(Error::new_char($ErrorKind, $self.get_position())))
+    ($self:ident, $ErrorKind:expr, $message:expr) => {
+        Some(Err(Error::new_char(
+            $ErrorKind,
+            $self.get_position(),
+            String::from($message),
+        )))
     };
 }
 
@@ -35,12 +39,12 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
     }
 
     fn next_identifier(&mut self, c: char) -> Option<Result<Token, Error>> {
-        let column = self.column;
+        let mut length = 0;
         let mut identifier = String::from(c);
         loop {
             match self.chars.peek() {
                 Some(&c) if c.is_ascii_alphabetic() || c.is_numeric() || c == '_' => {
-                    self.column += 1;
+                    length += 1;
                     self.chars.next();
                     identifier.push(c);
                 }
@@ -48,14 +52,14 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             }
         }
 
-        if let Some(token_kind) = TokenKind::str_to_identifier(&identifier) {
-            return Some(Ok(Token::new(token_kind, self.row, column)));
-        }
-        return Some(Ok(Token::new(
-            TokenKind::Identifier(identifier),
-            self.row,
-            column,
-        )));
+        let token: Option<Result<Token, Error>> = match TokenKind::str_to_identifier(&identifier) {
+            Some(token_kind) => token!(self, token_kind),
+            _ => token!(self, TokenKind::Identifier(identifier)),
+        };
+
+        self.column += length;
+
+        token
     }
 
     fn next_string(&mut self) -> Option<Result<Token, Error>> {
@@ -79,7 +83,11 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(_) => unreachable!(),
             None => {
                 self.column += length + 1;
-                error!(self, ErrorKind::InvalidSyntax(vec!['"'], None))
+                error!(
+                    self,
+                    ErrorKind::InvalidSyntax(vec!['"'], None),
+                    "Unclosed string delimiter."
+                )
             }
         };
     }
@@ -89,7 +97,13 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
 
         match self.chars.next() {
             Some(c) => result = c,
-            None => return error!(self, ErrorKind::UnexpectedChar('\'')),
+            None => {
+                return error!(
+                    self,
+                    ErrorKind::InvalidSyntax(Vec::new(), Some('\'')),
+                    "Unexpected character."
+                )
+            }
         }
 
         return match self.chars.next() {
@@ -100,9 +114,17 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             }
             Some(c) => {
                 self.column += 2;
-                error!(self, ErrorKind::InvalidSyntax(vec!['\''], Some(c)))
+                error!(
+                    self,
+                    ErrorKind::InvalidSyntax(vec!['\''], Some(c)),
+                    "Unclosed character delimiter."
+                )
             }
-            None => error!(self, ErrorKind::InvalidSyntax(vec!['\''], None)),
+            None => error!(
+                self,
+                ErrorKind::InvalidSyntax(vec!['\''], None),
+                "Unclosed character delimiter."
+            ),
         };
     }
 
@@ -125,7 +147,11 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                         number.push('.');
                         is_float = true;
                     } else {
-                        return error!(self, ErrorKind::UnexpectedChar('.'));
+                        return error!(
+                            self,
+                            ErrorKind::InvalidSyntax(('0'..='9').collect(), Some('.')),
+                            "Multiple floating points encountered in one float."
+                        );
                     }
                 }
                 _ => break,
@@ -191,15 +217,25 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
                 }
                 _ => token!(self, TokenKind::Assignment),
             },
-            Some('!') => match self.chars.peek() {
+            Some('!') => match self.chars.next() {
                 Some('=') => {
-                    self.chars.next();
                     let token = token!(self, TokenKind::NotEquals);
                     self.column += 1;
                     token
                 }
-                Some(&c) => error!(self, ErrorKind::InvalidSyntax(vec!['='], Some(c))),
-                _ => error!(self, ErrorKind::InvalidSyntax(vec!['='], None)),
+                Some(c) => {
+                    self.column += 1;
+                    error!(
+                        self,
+                        ErrorKind::InvalidSyntax(vec!['='], Some(c)),
+                        "`!` can be only a part of `!=`."
+                    )
+                }
+                None => error!(
+                    self,
+                    ErrorKind::InvalidSyntax(vec!['='], None),
+                    "`!` can be only a part of `!=`."
+                ),
             },
             Some('>') => match self.chars.peek() {
                 Some('=') => {
@@ -225,7 +261,11 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
             Some('}') => token!(self, TokenKind::RightCurly),
             Some('[') => token!(self, TokenKind::LeftBracket),
             Some(']') => token!(self, TokenKind::RightBracket),
-            Some(c) => error!(self, ErrorKind::UnrecognizedChar(c)),
+            Some(c) => error!(
+                self,
+                ErrorKind::InvalidSyntax(Vec::new(), Some(c)),
+                "Unrecognized character."
+            ),
             _ => None,
         };
     }

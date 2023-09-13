@@ -53,6 +53,7 @@ fn strings_and_chars() {
         Err(Error::new_char(
             ErrorKind::InvalidSyntax(vec!['\''], Some('o')),
             Position::new(4, 3),
+            String::from("Unclosed character delimiter."),
         )),
     ];
 
@@ -70,6 +71,7 @@ fn string_unclosed_delimeter() {
     let expected: Vec<Result<Token, Error>> = vec![Err(Error::new_char(
         ErrorKind::InvalidSyntax(vec!['"'], None),
         Position::new(1, 6),
+        String::from("Unclosed string delimiter."),
     ))];
 
     for (actual_token, expected_token) in actual.iter().zip(expected.iter()) {
@@ -86,8 +88,9 @@ fn char_unclosed_delimeter() {
     let expected: Vec<Result<Token, Error>> = vec![
         Ok(Token::new(TokenKind::Character('a'), 1, 1)),
         Err(Error::new_char(
-            ErrorKind::UnexpectedChar('\''),
+            ErrorKind::InvalidSyntax(Vec::new(), Some('\'')),
             Position::new(1, 5),
+            String::from("Unexpected character."),
         )),
     ];
 
@@ -107,8 +110,9 @@ fn numbers() {
         Ok(Token::new(TokenKind::Float(1.23), 1, 5)),
         Ok(Token::new(TokenKind::Float(12.3), 1, 10)),
         Err(Error::new_char(
-            ErrorKind::UnexpectedChar('.'),
+            ErrorKind::InvalidSyntax(('0'..='9').collect(), Some('.')),
             Position::new(1, 18),
+            String::from("Multiple floating points encountered in one float."),
         )),
     ];
 
