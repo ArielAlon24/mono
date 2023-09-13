@@ -40,6 +40,8 @@ pub enum TokenKind {
     LeftParen,
     RightCurly,
     LeftCurly,
+    RightBracket,
+    LeftBracket,
 
     // Arrows
     Arrow,

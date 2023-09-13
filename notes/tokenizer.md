@@ -40,6 +40,8 @@
     - [x] LeftParen
     - [x] RightCurly
     - [x] LeftCurly
+    - [x] RightBracket
+    - [x] LeftBracket
 
 - [x] **Arrows**
     - [x] Arrow

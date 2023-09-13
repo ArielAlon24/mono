@@ -40,7 +40,7 @@ fn booleans_and_none() {
 #[test]
 fn strings_and_chars() {
     //                               1      2      3       4
-    //                               12 3 4 12 3 4 12345 6 1 23456 7
+    //                               12 3 4 12 34 1 23456 7 1 23456
     let tokenizer = Tokenizer::new("\'a\'\n\"a\"\n\"mono\"\n\'mono\'".chars());
     let actual: Vec<_> = tokenizer.collect();
     let expected: Vec<Result<Token, Error>> = vec![
@@ -68,7 +68,7 @@ fn string_unclosed_delimeter() {
     let tokenizer = Tokenizer::new("\"mono".chars());
     let actual: Vec<_> = tokenizer.collect();
     let expected: Vec<Result<Token, Error>> = vec![Err(Error::new_char(
-        ErrorKind::UnclosedDelimeter('"'),
+        ErrorKind::InvalidSyntax(vec!['"'], None),
         Position::new(1, 6),
     ))];
 
@@ -86,8 +86,8 @@ fn char_unclosed_delimeter() {
     let expected: Vec<Result<Token, Error>> = vec![
         Ok(Token::new(TokenKind::Character('a'), 1, 1)),
         Err(Error::new_char(
-            ErrorKind::UnclosedDelimeter('\''),
-            Position::new(1, 6),
+            ErrorKind::UnexpectedChar('\''),
+            Position::new(1, 5),
         )),
     ];
 
@@ -185,21 +185,21 @@ fn arrows_and_operators() {
 fn brackets() {
     //          01234567890
     //          0         1
-    let code = "({}(){}(())";
+    let code = "({}(){}[()]";
     let tokenizer = Tokenizer::new(code.chars());
     let actual: Vec<_> = tokenizer.collect();
     let expected: Vec<Result<Token, Error>> = vec![
-        Ok(Token::new(TokenKind::RightParen, 1, 1)),
-        Ok(Token::new(TokenKind::RightCurly, 1, 2)),
-        Ok(Token::new(TokenKind::LeftCurly, 1, 3)),
-        Ok(Token::new(TokenKind::RightParen, 1, 4)),
-        Ok(Token::new(TokenKind::LeftParen, 1, 5)),
-        Ok(Token::new(TokenKind::RightCurly, 1, 6)),
-        Ok(Token::new(TokenKind::LeftCurly, 1, 7)),
-        Ok(Token::new(TokenKind::RightParen, 1, 8)),
-        Ok(Token::new(TokenKind::RightParen, 1, 9)),
-        Ok(Token::new(TokenKind::LeftParen, 1, 10)),
-        Ok(Token::new(TokenKind::LeftParen, 1, 11)),
+        Ok(Token::new(TokenKind::LeftParen, 1, 1)),
+        Ok(Token::new(TokenKind::LeftCurly, 1, 2)),
+        Ok(Token::new(TokenKind::RightCurly, 1, 3)),
+        Ok(Token::new(TokenKind::LeftParen, 1, 4)),
+        Ok(Token::new(TokenKind::RightParen, 1, 5)),
+        Ok(Token::new(TokenKind::LeftCurly, 1, 6)),
+        Ok(Token::new(TokenKind::RightCurly, 1, 7)),
+        Ok(Token::new(TokenKind::LeftBracket, 1, 8)),
+        Ok(Token::new(TokenKind::LeftParen, 1, 9)),
+        Ok(Token::new(TokenKind::RightParen, 1, 10)),
+        Ok(Token::new(TokenKind::RightBracket, 1, 11)),
     ];
 
     for (actual_token, expected_token) in actual.iter().zip(expected.iter()) {
@@ -214,7 +214,7 @@ fn full() {
 'm' 'o' 'n' 'o'
 or and not none false true identifier
 + - * / % ^ = == != > >= < <=
-( ) { }
+( ) { } [ ]
 -> => ";
     let tokenizer = Tokenizer::new(code.chars());
     let actual: Vec<_> = tokenizer.collect();
@@ -257,11 +257,13 @@ or and not none false true identifier
         Ok(Token::new(TokenKind::LessThan, 5, 26)),
         Ok(Token::new(TokenKind::LessThanEq, 5, 28)),
         Ok(Token::new(TokenKind::NewLine, 5, 30)),
-        Ok(Token::new(TokenKind::RightParen, 6, 1)),
-        Ok(Token::new(TokenKind::LeftParen, 6, 3)),
-        Ok(Token::new(TokenKind::RightCurly, 6, 5)),
-        Ok(Token::new(TokenKind::LeftCurly, 6, 7)),
-        Ok(Token::new(TokenKind::NewLine, 6, 8)),
+        Ok(Token::new(TokenKind::LeftParen, 6, 1)),
+        Ok(Token::new(TokenKind::RightParen, 6, 3)),
+        Ok(Token::new(TokenKind::LeftCurly, 6, 5)),
+        Ok(Token::new(TokenKind::RightCurly, 6, 7)),
+        Ok(Token::new(TokenKind::LeftBracket, 6, 9)),
+        Ok(Token::new(TokenKind::RightBracket, 6, 11)),
+        Ok(Token::new(TokenKind::NewLine, 6, 12)),
         Ok(Token::new(TokenKind::Arrow, 7, 1)),
         Ok(Token::new(TokenKind::DoubleArrow, 7, 4)),
     ];

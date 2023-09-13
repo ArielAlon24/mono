@@ -59,44 +59,49 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
     }
 
     fn next_string(&mut self) -> Option<Result<Token, Error>> {
-        let column = self.column;
+        let mut length = 0;
         let mut string = String::new();
         while let Some(&c) = self.chars.peek() {
             if c == '"' {
                 break;
             }
             self.chars.next();
-            self.column += 1;
+            length += 1;
             string.push(c);
         }
 
-        self.column += 1;
         return match self.chars.next() {
             Some(c) if c == '"' => {
-                Some(Ok(Token::new(TokenKind::String(string), self.row, column)))
+                let token = token!(self, TokenKind::String(string));
+                self.column += length + 1; // +1 for the '"'
+                token
             }
-            Some(c) => error!(self, ErrorKind::InvalidSyntax(vec!['"'], Some(c))),
-            None => error!(self, ErrorKind::UnclosedDelimeter('"')),
+            Some(_) => unreachable!(),
+            None => {
+                self.column += length + 1;
+                error!(self, ErrorKind::InvalidSyntax(vec!['"'], None))
+            }
         };
     }
 
     fn next_char(&mut self) -> Option<Result<Token, Error>> {
-        let column = self.column;
         let result: char;
-        self.column += 1;
+
         match self.chars.next() {
             Some(c) => result = c,
-            None => return error!(self, ErrorKind::UnclosedDelimeter('\'')),
+            None => return error!(self, ErrorKind::UnexpectedChar('\'')),
         }
 
-        self.column += 1;
         return match self.chars.next() {
-            Some('\'') => Some(Ok(Token::new(
-                TokenKind::Character(result),
-                self.row,
-                column,
-            ))),
-            Some(c) => error!(self, ErrorKind::InvalidSyntax(vec!['\''], Some(c))),
+            Some('\'') => {
+                let token = token!(self, TokenKind::Character(result));
+                self.column += 2;
+                token
+            }
+            Some(c) => {
+                self.column += 2;
+                error!(self, ErrorKind::InvalidSyntax(vec!['\''], Some(c)))
+            }
             None => error!(self, ErrorKind::InvalidSyntax(vec!['\''], None)),
         };
     }
@@ -214,10 +219,12 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
                 }
                 _ => token!(self, TokenKind::LessThan),
             },
-            Some('(') => token!(self, TokenKind::RightParen),
-            Some(')') => token!(self, TokenKind::LeftParen),
-            Some('{') => token!(self, TokenKind::RightCurly),
-            Some('}') => token!(self, TokenKind::LeftCurly),
+            Some('(') => token!(self, TokenKind::LeftParen),
+            Some(')') => token!(self, TokenKind::RightParen),
+            Some('{') => token!(self, TokenKind::LeftCurly),
+            Some('}') => token!(self, TokenKind::RightCurly),
+            Some('[') => token!(self, TokenKind::LeftBracket),
+            Some(']') => token!(self, TokenKind::RightBracket),
             Some(c) => error!(self, ErrorKind::UnrecognizedChar(c)),
             _ => None,
         };

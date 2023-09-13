@@ -5,7 +5,6 @@ pub enum ErrorKind {
     UnrecognizedChar(char),
     InvalidSyntax(Vec<char>, Option<char>),
     UnexpectedChar(char),
-    UnclosedDelimeter(char),
 }
 
 #[derive(Debug, PartialEq)]
