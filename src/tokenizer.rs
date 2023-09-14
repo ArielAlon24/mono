@@ -1,4 +1,4 @@
-use crate::models::error::{Error, ErrorKind};
+use crate::models::error::{Error, InvalidSyntax, InvalidSyntaxKind};
 use crate::models::position::Position;
 use crate::models::token::{Token, TokenKind};
 use core::iter::Peekable;
@@ -10,12 +10,11 @@ macro_rules! token {
 }
 
 macro_rules! error {
-    ($self:ident, $ErrorKind:expr, $message:expr) => {
-        Some(Err(Error::new_char(
+    ($self:ident, $ErrorKind:expr) => {
+        Some(Err(Error::InvalidSyntaxError(InvalidSyntax::new(
             $ErrorKind,
             $self.get_position(),
-            String::from($message),
-        )))
+        ))))
     };
 }
 
@@ -83,11 +82,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(_) => unreachable!(),
             None => {
                 self.column += length + 1;
-                error!(
-                    self,
-                    ErrorKind::InvalidSyntax(vec!['"'], None),
-                    "Unclosed string delimiter."
-                )
+                error!(self, InvalidSyntaxKind::UnclosedCharDelimeter('"', None))
             }
         };
     }
@@ -97,13 +92,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
 
         match self.chars.next() {
             Some(c) => result = c,
-            None => {
-                return error!(
-                    self,
-                    ErrorKind::InvalidSyntax(Vec::new(), Some('\'')),
-                    "Unexpected character."
-                )
-            }
+            None => return error!(self, InvalidSyntaxKind::UnexpectedChar('\'')),
         }
 
         return match self.chars.next() {
@@ -116,15 +105,10 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 self.column += 2;
                 error!(
                     self,
-                    ErrorKind::InvalidSyntax(vec!['\''], Some(c)),
-                    "Unclosed character delimiter."
+                    InvalidSyntaxKind::UnclosedCharDelimeter('\'', Some(c))
                 )
             }
-            None => error!(
-                self,
-                ErrorKind::InvalidSyntax(vec!['\''], None),
-                "Unclosed character delimiter."
-            ),
+            None => error!(self, InvalidSyntaxKind::UnclosedCharDelimeter('"', None)),
         };
     }
 
@@ -147,11 +131,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                         number.push('.');
                         is_float = true;
                     } else {
-                        return error!(
-                            self,
-                            ErrorKind::InvalidSyntax(('0'..='9').collect(), Some('.')),
-                            "Multiple floating points encountered in one float."
-                        );
+                        return error!(self, InvalidSyntaxKind::MultipleFloatingPoints);
                     }
                 }
                 _ => break,
@@ -223,19 +203,11 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
                     self.column += 1;
                     token
                 }
-                Some(c) => {
+                Some(_) => {
                     self.column += 1;
-                    error!(
-                        self,
-                        ErrorKind::InvalidSyntax(vec!['='], Some(c)),
-                        "`!` can be only a part of `!=`."
-                    )
+                    error!(self, InvalidSyntaxKind::UnexpectedChar('!'))
                 }
-                None => error!(
-                    self,
-                    ErrorKind::InvalidSyntax(vec!['='], None),
-                    "`!` can be only a part of `!=`."
-                ),
+                None => error!(self, InvalidSyntaxKind::UnexpectedChar('!')),
             },
             Some('>') => match self.chars.peek() {
                 Some('=') => {
@@ -261,11 +233,7 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
             Some('}') => token!(self, TokenKind::RightCurly),
             Some('[') => token!(self, TokenKind::LeftBracket),
             Some(']') => token!(self, TokenKind::RightBracket),
-            Some(c) => error!(
-                self,
-                ErrorKind::InvalidSyntax(Vec::new(), Some(c)),
-                "Unrecognized character."
-            ),
+            Some(c) => error!(self, InvalidSyntaxKind::UnrecognizedChar(c)),
             _ => None,
         };
     }

@@ -1,34 +1,26 @@
 use super::position::Position;
 
 #[derive(Debug, PartialEq)]
-pub enum ErrorKind {
-    InvalidSyntax(Vec<char>, Option<char>),
+pub enum Error {
+    InvalidSyntaxError(InvalidSyntax),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct Error {
-    kind: ErrorKind,
-    start: Position,
-    end: Option<Position>,
-    message: String,
+pub struct InvalidSyntax {
+    kind: InvalidSyntaxKind,
+    position: Position,
 }
 
-impl Error {
-    pub fn new(kind: ErrorKind, start: Position, end: Position, message: String) -> Self {
-        Self {
-            kind,
-            start,
-            end: Some(end),
-            message,
-        }
-    }
+#[derive(Debug, PartialEq)]
+pub enum InvalidSyntaxKind {
+    UnclosedCharDelimeter(char, Option<char>),
+    UnexpectedChar(char),
+    MultipleFloatingPoints,
+    UnrecognizedChar(char),
+}
 
-    pub fn new_char(kind: ErrorKind, position: Position, message: String) -> Self {
-        Self {
-            kind,
-            start: position,
-            end: None,
-            message,
-        }
+impl InvalidSyntax {
+    pub fn new(kind: InvalidSyntaxKind, position: Position) -> Self {
+        Self { kind, position }
     }
 }

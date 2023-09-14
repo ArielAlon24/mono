@@ -1,4 +1,4 @@
-use mono::models::error::{Error, ErrorKind};
+use mono::models::error::{Error, InvalidSyntax, InvalidSyntaxKind};
 use mono::models::position::Position;
 use mono::models::token::{Token, TokenKind};
 use mono::tokenizer::Tokenizer;
@@ -50,11 +50,10 @@ fn strings_and_chars() {
         Ok(Token::new(TokenKind::NewLine, 2, 4)),
         Ok(Token::new(TokenKind::String(String::from("mono")), 3, 1)),
         Ok(Token::new(TokenKind::NewLine, 3, 7)),
-        Err(Error::new_char(
-            ErrorKind::InvalidSyntax(vec!['\''], Some('o')),
+        Err(Error::InvalidSyntaxError(InvalidSyntax::new(
+            InvalidSyntaxKind::UnclosedCharDelimeter('\'', Some('o')),
             Position::new(4, 3),
-            String::from("Unclosed character delimiter."),
-        )),
+        ))),
     ];
 
     for (actual_token, expected_token) in actual.iter().zip(expected.iter()) {
@@ -68,11 +67,11 @@ fn string_unclosed_delimeter() {
     //                               123456
     let tokenizer = Tokenizer::new("\"mono".chars());
     let actual: Vec<_> = tokenizer.collect();
-    let expected: Vec<Result<Token, Error>> = vec![Err(Error::new_char(
-        ErrorKind::InvalidSyntax(vec!['"'], None),
-        Position::new(1, 6),
-        String::from("Unclosed string delimiter."),
-    ))];
+    let expected: Vec<Result<Token, Error>> =
+        vec![Err(Error::InvalidSyntaxError(InvalidSyntax::new(
+            InvalidSyntaxKind::UnclosedCharDelimeter('"', None),
+            Position::new(1, 6),
+        )))];
 
     for (actual_token, expected_token) in actual.iter().zip(expected.iter()) {
         assert_eq!(actual_token, expected_token);
@@ -87,11 +86,10 @@ fn char_unclosed_delimeter() {
     let actual: Vec<_> = tokenizer.collect();
     let expected: Vec<Result<Token, Error>> = vec![
         Ok(Token::new(TokenKind::Character('a'), 1, 1)),
-        Err(Error::new_char(
-            ErrorKind::InvalidSyntax(Vec::new(), Some('\'')),
+        Err(Error::InvalidSyntaxError(InvalidSyntax::new(
+            InvalidSyntaxKind::UnexpectedChar('\''),
             Position::new(1, 5),
-            String::from("Unexpected character."),
-        )),
+        ))),
     ];
 
     for (actual_token, expected_token) in actual.iter().zip(expected.iter()) {
@@ -109,11 +107,10 @@ fn numbers() {
         Ok(Token::new(TokenKind::Integer(123), 1, 1)),
         Ok(Token::new(TokenKind::Float(1.23), 1, 5)),
         Ok(Token::new(TokenKind::Float(12.3), 1, 10)),
-        Err(Error::new_char(
-            ErrorKind::InvalidSyntax(('0'..='9').collect(), Some('.')),
+        Err(Error::InvalidSyntaxError(InvalidSyntax::new(
+            InvalidSyntaxKind::MultipleFloatingPoints,
             Position::new(1, 18),
-            String::from("Multiple floating points encountered in one float."),
-        )),
+        ))),
     ];
 
     for (actual_token, expected_token) in actual.iter().zip(expected.iter()) {
