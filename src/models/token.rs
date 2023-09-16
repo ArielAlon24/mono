@@ -67,7 +67,7 @@ impl TokenKind {
 
 #[derive(Debug, PartialEq)]
 pub struct Token {
-    kind: TokenKind,
+    pub kind: TokenKind,
     position: Position,
 }
 

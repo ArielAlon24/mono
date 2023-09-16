@@ -1,4 +1,6 @@
 use super::position::Position;
+use crate::models::token::Token;
+use crate::models::token::TokenKind;
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -17,6 +19,7 @@ pub enum InvalidSyntaxKind {
     UnexpectedChar(char),
     MultipleFloatingPoints,
     UnrecognizedChar(char),
+    InvalidToken(Vec<TokenKind>, Option<Token>),
 }
 
 impl InvalidSyntax {

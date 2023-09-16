@@ -20,21 +20,113 @@ macro_rules! error {
 
 pub struct Tokenizer<Chars: Iterator<Item = char>> {
     chars: Chars,
+    current: Option<Result<Token, Error>>,
     row: usize,
     column: usize,
 }
 
 impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
     pub fn new(chars: Chars) -> Self {
-        Self {
+        let mut tokenizer = Self {
             chars: chars.peekable(),
+            current: None,
             row: 1,
             column: 0,
-        }
+        };
+        tokenizer.next();
+        tokenizer
     }
 
-    fn get_position(&self) -> Position {
+    pub fn peek(&mut self) -> &Option<Result<Token, Error>> {
+        &self.current
+    }
+
+    pub fn get_position(&self) -> Position {
         Position::new(self.row, self.column)
+    }
+
+    fn _next(&mut self) -> Option<Result<Token, Error>> {
+        self.column += 1;
+        return match self.chars.next() {
+            Some(' ') => self._next(),
+            Some('\n') => {
+                let token = token!(self, TokenKind::NewLine);
+                self.row += 1;
+                self.column = 0;
+                token
+            }
+            Some(c) if c.is_ascii_alphabetic() || c == '_' => self.next_identifier(c),
+            Some(c) if c == '"' => self.next_string(),
+            Some(c) if c == '\'' => self.next_char(),
+            Some(c) if c.is_numeric() => self.next_number(c),
+            Some('+') => token!(self, TokenKind::Addition),
+            Some('-') => match self.chars.peek() {
+                Some('>') => {
+                    self.chars.next();
+                    let token = token!(self, TokenKind::Arrow);
+                    self.column += 1;
+                    token
+                }
+                _ => token!(self, TokenKind::Subtraction),
+            },
+            Some('*') => token!(self, TokenKind::Multiplication),
+            Some('/') => token!(self, TokenKind::Division),
+            Some('%') => token!(self, TokenKind::Modulo),
+            Some('^') => token!(self, TokenKind::Power),
+            Some('=') => match self.chars.peek() {
+                Some('>') => {
+                    self.chars.next();
+                    let token = token!(self, TokenKind::DoubleArrow);
+                    self.column += 1;
+                    token
+                }
+                Some('=') => {
+                    self.chars.next();
+                    let token = token!(self, TokenKind::Equals);
+                    self.column += 1;
+                    token
+                }
+                _ => token!(self, TokenKind::Assignment),
+            },
+            Some('!') => match self.chars.next() {
+                Some('=') => {
+                    let token = token!(self, TokenKind::NotEquals);
+                    self.column += 1;
+                    token
+                }
+                Some(_) => {
+                    self.column += 1;
+                    error!(self, InvalidSyntaxKind::UnexpectedChar('!'))
+                }
+                None => error!(self, InvalidSyntaxKind::UnexpectedChar('!')),
+            },
+            Some('>') => match self.chars.peek() {
+                Some('=') => {
+                    self.chars.next();
+                    let token = token!(self, TokenKind::GreaterEq);
+                    self.column += 1;
+                    token
+                }
+                _ => token!(self, TokenKind::Greater),
+            },
+            Some('<') => match self.chars.peek() {
+                Some('=') => {
+                    self.chars.next();
+                    let token = token!(self, TokenKind::LessThanEq);
+                    self.column += 1;
+                    token
+                }
+                _ => token!(self, TokenKind::LessThan),
+            },
+            Some('(') => token!(self, TokenKind::LeftParen),
+            Some(')') => token!(self, TokenKind::RightParen),
+            Some('{') => token!(self, TokenKind::LeftCurly),
+            Some('}') => token!(self, TokenKind::RightCurly),
+            Some('[') => token!(self, TokenKind::LeftBracket),
+            Some(']') => token!(self, TokenKind::RightBracket),
+            Some(c) => error!(self, InvalidSyntaxKind::UnrecognizedChar(c)),
+            _ => None,
+        };
     }
 
     fn next_identifier(&mut self, c: char) -> Option<Result<Token, Error>> {
@@ -155,86 +247,8 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
     type Item = Result<Token, Error>;
 
     fn next(&mut self) -> Option<Result<Token, Error>> {
-        self.column += 1;
-        return match self.chars.next() {
-            Some(' ') => self.next(),
-            Some('\n') => {
-                let token = token!(self, TokenKind::NewLine);
-                self.row += 1;
-                self.column = 0;
-                token
-            }
-            Some(c) if c.is_ascii_alphabetic() || c == '_' => self.next_identifier(c),
-            Some(c) if c == '"' => self.next_string(),
-            Some(c) if c == '\'' => self.next_char(),
-            Some(c) if c.is_numeric() => self.next_number(c),
-            Some('+') => token!(self, TokenKind::Addition),
-            Some('-') => match self.chars.peek() {
-                Some('>') => {
-                    self.chars.next();
-                    let token = token!(self, TokenKind::Arrow);
-                    self.column += 1;
-                    token
-                }
-                _ => token!(self, TokenKind::Subtraction),
-            },
-            Some('*') => token!(self, TokenKind::Multiplication),
-            Some('/') => token!(self, TokenKind::Division),
-            Some('%') => token!(self, TokenKind::Modulo),
-            Some('^') => token!(self, TokenKind::Power),
-            Some('=') => match self.chars.peek() {
-                Some('>') => {
-                    self.chars.next();
-                    let token = token!(self, TokenKind::DoubleArrow);
-                    self.column += 1;
-                    token
-                }
-                Some('=') => {
-                    self.chars.next();
-                    let token = token!(self, TokenKind::Equals);
-                    self.column += 1;
-                    token
-                }
-                _ => token!(self, TokenKind::Assignment),
-            },
-            Some('!') => match self.chars.next() {
-                Some('=') => {
-                    let token = token!(self, TokenKind::NotEquals);
-                    self.column += 1;
-                    token
-                }
-                Some(_) => {
-                    self.column += 1;
-                    error!(self, InvalidSyntaxKind::UnexpectedChar('!'))
-                }
-                None => error!(self, InvalidSyntaxKind::UnexpectedChar('!')),
-            },
-            Some('>') => match self.chars.peek() {
-                Some('=') => {
-                    self.chars.next();
-                    let token = token!(self, TokenKind::GreaterEq);
-                    self.column += 1;
-                    token
-                }
-                _ => token!(self, TokenKind::Greater),
-            },
-            Some('<') => match self.chars.peek() {
-                Some('=') => {
-                    self.chars.next();
-                    let token = token!(self, TokenKind::LessThanEq);
-                    self.column += 1;
-                    token
-                }
-                _ => token!(self, TokenKind::LessThan),
-            },
-            Some('(') => token!(self, TokenKind::LeftParen),
-            Some(')') => token!(self, TokenKind::RightParen),
-            Some('{') => token!(self, TokenKind::LeftCurly),
-            Some('}') => token!(self, TokenKind::RightCurly),
-            Some('[') => token!(self, TokenKind::LeftBracket),
-            Some(']') => token!(self, TokenKind::RightBracket),
-            Some(c) => error!(self, InvalidSyntaxKind::UnrecognizedChar(c)),
-            _ => None,
-        };
+        let current = self.current.take();
+        self.current = self._next();
+        current
     }
 }

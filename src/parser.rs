@@ -3,13 +3,13 @@ use core::str::Chars;
 use std::iter::Peekable;
 
 pub struct Parser<'a> {
-    tokenizer: Peekable<Tokenizer<Peekable<Chars<'a>>>>,
+    tokenizer: Tokenizer<Peekable<Chars<'a>>>,
 }
 
 impl<'a> Parser<'a> {
     pub fn new(tokenizer: Tokenizer<Peekable<Chars<'a>>>) -> Self {
         return Self {
-            tokenizer: tokenizer.peekable(),
+            tokenizer: tokenizer,
         };
     }
 
