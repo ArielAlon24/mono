@@ -4,15 +4,24 @@ use crate::models::token::{Token, TokenKind};
 
 use core::iter::Peekable;
 
+// crating a token with `None` end position
 macro_rules! single {
-    ($self:ident, $TokenKind:expr) => {
-        Some(Ok(Token::single($TokenKind, $self.get_position())))
+    ($Position:expr, $TokenKind:expr) => {
+        Some(Ok(Token::new($Position.clone(), None, $TokenKind)))
     };
 }
 
+// creating a token with `Some(Position)` end position.
 macro_rules! multi {
-    ($self:ident, $TokenKind:expr, $start:expr) => {
-        Some(Ok(Token::multi($TokenKind, $start, $self.get_position())))
+    ($start:expr, $end:expr, $TokenKind:expr) => {
+        Some(Ok(Token::new($start, Some($end.clone()), $TokenKind)))
+    };
+}
+
+// creating a token with `None` or `Some(Position)` end position.
+macro_rules! raw {
+    ($start:expr, $end:expr, $TokenKind:expr) => {
+        Some(Ok(Token::new($start, $end, $TokenKind)))
     };
 }
 
@@ -54,7 +63,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         return match self.chars.next() {
             Some(' ') => self._next(),
             Some('\n') => {
-                let token = single!(self, TokenKind::NewLine);
+                let token = single!(self.position, TokenKind::NewLine);
                 self.position.newline();
                 token
             }
@@ -62,40 +71,40 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(c) if c == '"' => self.next_string(),
             Some(c) if c == '\'' => self.next_char(),
             Some(c) if c.is_numeric() => self.next_number(c),
-            Some('+') => single!(self, TokenKind::Addition),
+            Some('+') => single!(self.position, TokenKind::Addition),
             Some('-') => match self.chars.peek() {
                 Some('>') => {
                     let start = self.get_position();
                     self.position.next();
                     self.chars.next();
-                    multi!(self, TokenKind::Arrow, start)
+                    multi!(start, self.position, TokenKind::Arrow)
                 }
-                _ => single!(self, TokenKind::Subtraction),
+                _ => single!(self.position, TokenKind::Subtraction),
             },
-            Some('*') => single!(self, TokenKind::Multiplication),
-            Some('/') => single!(self, TokenKind::Division),
-            Some('%') => single!(self, TokenKind::Modulo),
-            Some('^') => single!(self, TokenKind::Power),
+            Some('*') => single!(self.position, TokenKind::Multiplication),
+            Some('/') => single!(self.position, TokenKind::Division),
+            Some('%') => single!(self.position, TokenKind::Modulo),
+            Some('^') => single!(self.position, TokenKind::Power),
             Some('=') => match self.chars.peek() {
                 Some('>') => {
                     let start = self.get_position();
                     self.chars.next();
                     self.position.next();
-                    multi!(self, TokenKind::DoubleArrow, start)
+                    multi!(start, self.position, TokenKind::DoubleArrow)
                 }
                 Some('=') => {
                     let start = self.get_position();
                     self.chars.next();
                     self.position.next();
-                    multi!(self, TokenKind::Equals, start)
+                    multi!(start, self.position, TokenKind::Equals)
                 }
-                _ => single!(self, TokenKind::Assignment),
+                _ => single!(self.position, TokenKind::Assignment),
             },
             Some('!') => match self.chars.next() {
                 Some('=') => {
                     let start = self.get_position();
                     self.position.next();
-                    multi!(self, TokenKind::NotEquals, start)
+                    multi!(start, self.position, TokenKind::NotEquals)
                 }
                 Some(_) => {
                     self.position.next();
@@ -108,25 +117,25 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                     let start = self.get_position();
                     self.chars.next();
                     self.position.next();
-                    multi!(self, TokenKind::GreaterEq, start)
+                    multi!(start, self.position, TokenKind::GreaterEq)
                 }
-                _ => single!(self, TokenKind::Greater),
+                _ => single!(self.position, TokenKind::Greater),
             },
             Some('<') => match self.chars.peek() {
                 Some('=') => {
                     let start = self.get_position();
                     self.chars.next();
                     self.position.next();
-                    multi!(self, TokenKind::LessThanEq, start)
+                    multi!(start, self.position, TokenKind::LessThanEq)
                 }
-                _ => single!(self, TokenKind::LessThan),
+                _ => single!(self.position, TokenKind::LessThan),
             },
-            Some('(') => single!(self, TokenKind::LeftParen),
-            Some(')') => single!(self, TokenKind::RightParen),
-            Some('{') => single!(self, TokenKind::LeftCurly),
-            Some('}') => single!(self, TokenKind::RightCurly),
-            Some('[') => single!(self, TokenKind::LeftBracket),
-            Some(']') => single!(self, TokenKind::RightBracket),
+            Some('(') => single!(self.position, TokenKind::LeftParen),
+            Some(')') => single!(self.position, TokenKind::RightParen),
+            Some('{') => single!(self.position, TokenKind::LeftCurly),
+            Some('}') => single!(self.position, TokenKind::RightCurly),
+            Some('[') => single!(self.position, TokenKind::LeftBracket),
+            Some(']') => single!(self.position, TokenKind::RightBracket),
             Some(c) => error!(InvalidSyntax::UnrecognizedChar(self.get_position(), c)),
             _ => None,
         };
@@ -146,9 +155,15 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             }
         }
 
+        let end = if &self.position == &start {
+            None
+        } else {
+            Some(self.position.clone())
+        };
+
         match TokenKind::str_to_identifier(&identifier) {
-            Some(token_kind) => multi!(self, token_kind, start),
-            _ => multi!(self, TokenKind::Identifier(identifier), start),
+            Some(token_kind) => raw!(start, end, token_kind),
+            _ => raw!(start, end, TokenKind::Identifier(identifier)),
         }
     }
 
@@ -165,7 +180,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
 
         match self.chars.next() {
-            Some(c) if c == '"' => multi!(self, TokenKind::String(string), start),
+            Some(c) if c == '"' => multi!(start, self.position, TokenKind::String(string)),
             Some(_) => unreachable!(),
             None => {
                 self.position.next();
@@ -192,7 +207,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         return match self.chars.next() {
             Some('\'') => {
                 self.position.next();
-                multi!(self, TokenKind::Character(result), start)
+                multi!(start, self.position, TokenKind::Character(result))
             }
             Some(c) => {
                 self.position.next();
@@ -220,10 +235,13 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         let mut is_float = false;
 
         loop {
-            self.position.next();
             match self.chars.next() {
-                Some(c) if c.is_numeric() => number.push(c),
+                Some(c) if c.is_numeric() => {
+                    number.push(c);
+                    self.position.next();
+                }
                 Some('.') => {
+                    self.position.next();
                     if !is_float {
                         number.push('.');
                         is_float = true;
@@ -237,15 +255,20 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 _ => break,
             }
         }
+        let end = if &self.position == &start {
+            None
+        } else {
+            Some(self.position.clone())
+        };
 
         if is_float {
             return match number.parse::<f32>() {
-                Ok(float) => multi!(self, TokenKind::Float(float), start),
+                Ok(float) => raw!(start, end, TokenKind::Float(float)),
                 _ => panic!("Couldn't parse float: {:?}", number),
             };
         }
         match number.parse::<i32>() {
-            Ok(int) => multi!(self, TokenKind::Integer(int), start),
+            Ok(int) => raw!(start, end, TokenKind::Integer(int)),
             _ => panic!("Couldn't parse integer: {:?}", number),
         }
     }

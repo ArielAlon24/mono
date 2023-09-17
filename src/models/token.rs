@@ -67,25 +67,13 @@ impl TokenKind {
 
 #[derive(Debug, PartialEq)]
 pub struct Token {
-    pub kind: TokenKind,
     start: Position,
     end: Option<Position>,
+    pub kind: TokenKind,
 }
 
 impl Token {
-    pub fn single(kind: TokenKind, position: Position) -> Self {
-        Self {
-            kind,
-            start: position,
-            end: None,
-        }
-    }
-
-    pub fn multi(kind: TokenKind, start: Position, end: Position) -> Self {
-        Self {
-            kind,
-            start,
-            end: Some(end),
-        }
+    pub fn new(start: Position, end: Option<Position>, kind: TokenKind) -> Self {
+        Self { start, end, kind }
     }
 }
