@@ -68,14 +68,24 @@ impl TokenKind {
 #[derive(Debug, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
-    position: Position,
+    start: Position,
+    end: Option<Position>,
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, row: usize, column: usize) -> Self {
-        return Self {
+    pub fn single(kind: TokenKind, position: Position) -> Self {
+        Self {
             kind,
-            position: Position::new(row, column),
-        };
+            start: position,
+            end: None,
+        }
+    }
+
+    pub fn multi(kind: TokenKind, start: Position, end: Position) -> Self {
+        Self {
+            kind,
+            start,
+            end: Some(end),
+        }
     }
 }

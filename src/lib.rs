@@ -8,5 +8,8 @@ use crate::tokenizer::Tokenizer;
 pub fn run(code: &str) {
     let tokenizer = Tokenizer::new(code.chars());
     let mut parser = Parser::new(tokenizer);
-    parser.parse();
+    match parser.parse() {
+        Ok(expression) => println!("OK:\t{:?}", expression),
+        Err(error) => println!("Error:\t{:?}", error),
+    }
 }

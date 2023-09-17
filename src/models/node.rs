@@ -1,9 +1,6 @@
 use crate::models::token::Token;
 
-pub enum Node {
-    Expression(Expression),
-}
-
+#[derive(Debug)]
 pub enum Expression {
     Atom(Token),
     BinaryOp(Box<Expression>, Token, Box<Expression>),

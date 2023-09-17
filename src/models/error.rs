@@ -4,26 +4,24 @@ use crate::models::token::TokenKind;
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
-    InvalidSyntaxError(InvalidSyntax),
+    InvalidSyntax(InvalidSyntax),
 }
 
 #[derive(Debug, PartialEq)]
-pub struct InvalidSyntax {
-    kind: InvalidSyntaxKind,
-    position: Position,
+pub enum InvalidSyntax {
+    UnclosedCharDelimeter(Position, Position, char, Option<char>),
+    UnexpectedChar(Position, char),
+    MultipleFloatingPoints(Position, Position),
+    UnrecognizedChar(Position, char),
+    InvalidToken {
+        expected: Vec<TokenKind>,
+        found: Option<Token>,
+    },
+    MultipleExpressions,
 }
 
-#[derive(Debug, PartialEq)]
-pub enum InvalidSyntaxKind {
-    UnclosedCharDelimeter(char, Option<char>),
-    UnexpectedChar(char),
-    MultipleFloatingPoints,
-    UnrecognizedChar(char),
-    InvalidToken(Vec<TokenKind>, Option<Token>),
-}
-
-impl InvalidSyntax {
-    pub fn new(kind: InvalidSyntaxKind, position: Position) -> Self {
-        Self { kind, position }
+impl Error {
+    pub fn invalid_syntax(kind: InvalidSyntax) -> Self {
+        Error::InvalidSyntax(kind)
     }
 }
