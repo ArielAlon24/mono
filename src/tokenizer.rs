@@ -71,7 +71,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(c) if c == '"' => self.next_string(),
             Some(c) if c == '\'' => self.next_char(),
             Some(c) if c.is_numeric() => self.next_number(c),
-            Some('+') => single!(self.position, TokenKind::Addition),
+            Some('+') => single!(self.position, TokenKind::Add),
             Some('-') => match self.chars.peek() {
                 Some('>') => {
                     let start = self.get_position();
@@ -79,12 +79,12 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                     self.chars.next();
                     multi!(start, self.position, TokenKind::Arrow)
                 }
-                _ => single!(self.position, TokenKind::Subtraction),
+                _ => single!(self.position, TokenKind::Sub),
             },
-            Some('*') => single!(self.position, TokenKind::Multiplication),
-            Some('/') => single!(self.position, TokenKind::Division),
-            Some('%') => single!(self.position, TokenKind::Modulo),
-            Some('^') => single!(self.position, TokenKind::Power),
+            Some('*') => single!(self.position, TokenKind::Mul),
+            Some('/') => single!(self.position, TokenKind::Div),
+            Some('%') => single!(self.position, TokenKind::Mod),
+            Some('^') => single!(self.position, TokenKind::Pow),
             Some('=') => match self.chars.peek() {
                 Some('>') => {
                     let start = self.get_position();
@@ -235,15 +235,15 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         let mut is_float = false;
 
         loop {
-            match self.chars.next() {
+            match self.chars.peek() {
                 Some(c) if c.is_numeric() => {
-                    number.push(c);
+                    number.push(self.chars.next().unwrap());
                     self.position.next();
                 }
                 Some('.') => {
                     self.position.next();
                     if !is_float {
-                        number.push('.');
+                        number.push(self.chars.next().unwrap());
                         is_float = true;
                     } else {
                         return error!(InvalidSyntax::MultipleFloatingPoints(
@@ -255,6 +255,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 _ => break,
             }
         }
+
         let end = if &self.position == &start {
             None
         } else {

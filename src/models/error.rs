@@ -10,6 +10,7 @@ pub enum Error {
 #[derive(Debug, PartialEq)]
 pub enum InvalidSyntax {
     UnclosedCharDelimeter(Position, Position, char, Option<char>),
+    UnclosedTokenDelimeter(Token, Option<Token>, TokenKind),
     UnexpectedChar(Position, char),
     MultipleFloatingPoints(Position, Position),
     UnrecognizedChar(Position, char),

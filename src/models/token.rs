@@ -21,12 +21,12 @@ pub enum TokenKind {
     Boolean(bool),
 
     // Operators
-    Addition,
-    Subtraction,
-    Multiplication,
-    Division,
-    Modulo,
-    Power,
+    Add,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    Pow,
     Assignment,
     Equals,
     NotEquals,
