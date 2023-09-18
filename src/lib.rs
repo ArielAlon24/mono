@@ -15,7 +15,7 @@ pub fn tokenizer(code: &str) {
     }
 }
 
-pub fn run(code: &str) {
+pub fn parser(code: &str) {
     let tokenizer = Tokenizer::new(code.chars());
     let mut parser = Parser::new(tokenizer);
     match parser.parse() {
