@@ -1,6 +1,5 @@
 use super::position::Position;
-use crate::models::token::Token;
-use crate::models::token::TokenKind;
+use crate::tokenizer::token::{Token, TokenKind};
 
 #[derive(Debug, PartialEq)]
 pub enum Error {

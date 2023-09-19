@@ -1,10 +1,8 @@
-use mono::models::error::Error;
-use mono::models::error::InvalidSyntax;
+use mono::models::error::{Error, InvalidSyntax};
 use mono::models::position::Position;
-use mono::tokenizer::Tokenizer;
+use mono::tokenizer::token::{Token, TokenKind};
+use mono::tokenizer::tokenizer::Tokenizer;
 use mono::{multi, single, syntax_error};
-
-use mono::models::token::{Token, TokenKind};
 
 macro_rules! tokenizer_test {
     ($test_name:ident, $input:expr, $tokens:expr) => {

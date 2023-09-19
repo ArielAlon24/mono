@@ -2,8 +2,8 @@ pub mod models;
 pub mod parser;
 pub mod tokenizer;
 
-use crate::parser::Parser;
-use crate::tokenizer::Tokenizer;
+use crate::parser::parser::Parser;
+use crate::tokenizer::tokenizer::Tokenizer;
 
 pub fn tokenizer(code: &str) {
     let tok = Tokenizer::new(code.chars());

@@ -1,7 +1,8 @@
 use crate::models::error::Error;
 use crate::models::error::InvalidSyntax;
-use crate::models::node::Node;
-use crate::models::token::TokenKind;
+use crate::parser::node::Node;
+use crate::tokenizer::token::TokenKind;
+
 use crate::Tokenizer;
 use core::str::Chars;
 use std::iter::Peekable;

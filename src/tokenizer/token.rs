@@ -1,4 +1,4 @@
-use super::position::Position;
+use crate::models::position::Position;
 
 #[derive(Debug, PartialEq)]
 #[allow(dead_code)]

@@ -1,4 +1,4 @@
-use crate::models::token::Token;
+use crate::tokenizer::token::Token;
 
 #[derive(Debug)]
 pub enum Node {

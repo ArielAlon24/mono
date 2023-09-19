@@ -1,6 +1,6 @@
 use crate::models::error::{Error, InvalidSyntax};
 use crate::models::position::Position;
-use crate::models::token::{Token, TokenKind};
+use crate::tokenizer::token::{Token, TokenKind};
 
 use core::iter::Peekable;
 
