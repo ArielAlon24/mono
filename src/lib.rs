@@ -10,7 +10,10 @@ pub fn tokenizer(code: &str) {
     for token in tok {
         match token {
             Ok(token) => println!("Token:\t{:?}", token),
-            Err(error) => eprintln!("Error:\t{:?}", error),
+            Err(error) => {
+                eprintln!("Error:\t{:?}", error);
+                return;
+            }
         }
     }
 }
@@ -20,6 +23,9 @@ pub fn parser(code: &str) {
     let mut parser = Parser::new(tokenizer);
     match parser.parse() {
         Ok(expression) => println!("Ok:\t{:?}", expression),
-        Err(error) => eprintln!("Error:\t{:?}", error),
+        Err(error) => {
+            eprintln!("Error:\t{:?}", error);
+            return;
+        }
     }
 }

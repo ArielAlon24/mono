@@ -5,6 +5,7 @@ use crate::models::token::{Token, TokenKind};
 use core::iter::Peekable;
 
 // crating a token with `None` end position
+#[macro_export]
 macro_rules! single {
     ($Position:expr, $TokenKind:expr) => {
         Some(Ok(Token::new($Position.clone(), None, $TokenKind)))
@@ -12,6 +13,7 @@ macro_rules! single {
 }
 
 // creating a token with `Some(Position)` end position.
+#[macro_export]
 macro_rules! multi {
     ($start:expr, $end:expr, $TokenKind:expr) => {
         Some(Ok(Token::new($start, Some($end.clone()), $TokenKind)))
@@ -19,23 +21,25 @@ macro_rules! multi {
 }
 
 // creating a token with `None` or `Some(Position)` end position.
+#[macro_export]
 macro_rules! raw {
     ($start:expr, $end:expr, $TokenKind:expr) => {
         Some(Ok(Token::new($start, $end, $TokenKind)))
     };
 }
 
-macro_rules! error {
+#[macro_export]
+macro_rules! syntax_error {
     ($ErrorKind:expr) => {
         Some(Err(Error::invalid_syntax($ErrorKind)))
     };
 }
 
-type IteratorItem = Option<Result<Token, Error>>;
+pub type TokenizerItem = Option<Result<Token, Error>>;
 
 pub struct Tokenizer<Chars: Iterator<Item = char>> {
     chars: Chars,
-    current: IteratorItem,
+    current: TokenizerItem,
     position: Position,
 }
 
@@ -50,7 +54,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         tokenizer
     }
 
-    pub fn peek(&mut self) -> &IteratorItem {
+    pub fn peek(&mut self) -> &TokenizerItem {
         &self.current
     }
 
@@ -58,7 +62,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         self.position.clone()
     }
 
-    fn _next(&mut self) -> IteratorItem {
+    fn _next(&mut self) -> TokenizerItem {
         self.position.next();
         return match self.chars.next() {
             Some(' ') => self._next(),
@@ -108,9 +112,9 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 }
                 Some(_) => {
                     self.position.next();
-                    error!(InvalidSyntax::UnexpectedChar(self.get_position(), '!'))
+                    syntax_error!(InvalidSyntax::UnexpectedChar(self.get_position(), '!'))
                 }
-                None => error!(InvalidSyntax::UnexpectedChar(self.get_position(), '!')),
+                None => syntax_error!(InvalidSyntax::UnexpectedChar(self.get_position(), '!')),
             },
             Some('>') => match self.chars.peek() {
                 Some('=') => {
@@ -136,12 +140,12 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some('}') => single!(self.position, TokenKind::RightCurly),
             Some('[') => single!(self.position, TokenKind::LeftBracket),
             Some(']') => single!(self.position, TokenKind::RightBracket),
-            Some(c) => error!(InvalidSyntax::UnrecognizedChar(self.get_position(), c)),
+            Some(c) => syntax_error!(InvalidSyntax::UnrecognizedChar(self.get_position(), c)),
             _ => None,
         };
     }
 
-    fn next_identifier(&mut self, c: char) -> IteratorItem {
+    fn next_identifier(&mut self, c: char) -> TokenizerItem {
         let start = self.get_position();
         let mut identifier = String::from(c);
         loop {
@@ -167,7 +171,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
     }
 
-    fn next_string(&mut self) -> IteratorItem {
+    fn next_string(&mut self) -> TokenizerItem {
         let start = self.get_position();
         let mut string = String::new();
         while let Some(&c) = self.chars.peek() {
@@ -184,23 +188,23 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(_) => unreachable!(),
             None => {
                 self.position.next();
-                error!(InvalidSyntax::UnclosedCharDelimeter(
+                syntax_error!(InvalidSyntax::UnclosedCharDelimeter(
                     start,
                     self.get_position(),
                     '"',
-                    None
+                    None,
                 ))
             }
         }
     }
 
-    fn next_char(&mut self) -> IteratorItem {
+    fn next_char(&mut self) -> TokenizerItem {
         let start = self.get_position();
         let result: char;
 
         match self.chars.next() {
             Some(c) => result = c,
-            None => return error!(InvalidSyntax::UnexpectedChar(self.get_position(), '\'')),
+            None => return syntax_error!(InvalidSyntax::UnexpectedChar(self.get_position(), '\'')),
         }
 
         self.position.next();
@@ -211,25 +215,23 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             }
             Some(c) => {
                 self.position.next();
-                error!(InvalidSyntax::UnclosedCharDelimeter(
-                    start,
-                    self.get_position(),
-                    '"',
-                    Some(c),
-                ))
-            }
-            None => {
-                error!(InvalidSyntax::UnclosedCharDelimeter(
+                syntax_error!(InvalidSyntax::UnclosedCharDelimeter(
                     start,
                     self.get_position(),
                     '\'',
-                    None
+                    Some(c),
                 ))
             }
+            None => syntax_error!(InvalidSyntax::UnclosedCharDelimeter(
+                start,
+                self.get_position(),
+                '\'',
+                None,
+            )),
         };
     }
 
-    fn next_number(&mut self, c: char) -> IteratorItem {
+    fn next_number(&mut self, c: char) -> TokenizerItem {
         let start = self.get_position();
         let mut number = String::from(c);
         let mut is_float = false;
@@ -246,9 +248,9 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                         number.push(self.chars.next().unwrap());
                         is_float = true;
                     } else {
-                        return error!(InvalidSyntax::MultipleFloatingPoints(
+                        return syntax_error!(InvalidSyntax::MultipleFloatingPoints(
                             start,
-                            self.get_position()
+                            self.get_position(),
                         ));
                     }
                 }

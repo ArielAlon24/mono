@@ -6,8 +6,6 @@ pub enum TokenKind {
     Identifier(String),
 
     // Keywords
-    True,
-    False,
     None,
     Not,
     And,
