@@ -8,16 +8,36 @@ pub enum Error {
 
 #[derive(Debug, PartialEq)]
 pub enum InvalidSyntax {
-    UnclosedCharDelimeter(Position, Position, char, Option<char>),
-    UnclosedTokenDelimeter(Token, Option<Token>, TokenKind),
-    UnexpectedChar(Position, char),
-    MultipleFloatingPoints(Position, Position),
-    UnrecognizedChar(Position, char),
+    UnclosedCharDelimeter {
+        start: Position,
+        end: Position,
+        delimiter: char,
+        found: Option<char>,
+    },
+    UnclosedTokenDelimeter {
+        start: Token,
+        found: Option<Token>,
+        delimiter: TokenKind,
+    },
+    UnexpectedChar {
+        position: Position,
+        c: char,
+    },
+    MultipleFloatingPoints {
+        start: Position,
+        end: Position,
+    },
+    UnrecognizedChar {
+        position: Position,
+        c: char,
+    },
     InvalidToken {
         expected: Vec<TokenKind>,
         found: Option<Token>,
     },
-    MultipleExpressions,
+    MultipleExpressions {
+        position: Position,
+    },
 }
 
 impl Error {

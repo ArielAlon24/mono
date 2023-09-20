@@ -1,6 +1,6 @@
 use crate::models::position::Position;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 #[allow(dead_code)]
 pub enum TokenKind {
     Identifier(String),
@@ -71,6 +71,15 @@ pub struct Token {
 }
 
 impl Token {
+    pub const COMPERATORS: [TokenKind; 6] = [
+        TokenKind::Equals,
+        TokenKind::NotEquals,
+        TokenKind::Greater,
+        TokenKind::GreaterEq,
+        TokenKind::LessThan,
+        TokenKind::LessThanEq,
+    ];
+
     pub fn new(start: Position, end: Option<Position>, kind: TokenKind) -> Self {
         Self { start, end, kind }
     }

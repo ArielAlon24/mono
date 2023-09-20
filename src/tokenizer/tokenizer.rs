@@ -112,9 +112,15 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 }
                 Some(_) => {
                     self.position.next();
-                    syntax_error!(InvalidSyntax::UnexpectedChar(self.get_position(), '!'))
+                    syntax_error!(InvalidSyntax::UnexpectedChar {
+                        position: self.get_position(),
+                        c: '!'
+                    })
                 }
-                None => syntax_error!(InvalidSyntax::UnexpectedChar(self.get_position(), '!')),
+                None => syntax_error!(InvalidSyntax::UnexpectedChar {
+                    position: self.get_position(),
+                    c: '!'
+                }),
             },
             Some('>') => match self.chars.peek() {
                 Some('=') => {
@@ -140,7 +146,10 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some('}') => single!(self.position, TokenKind::RightCurly),
             Some('[') => single!(self.position, TokenKind::LeftBracket),
             Some(']') => single!(self.position, TokenKind::RightBracket),
-            Some(c) => syntax_error!(InvalidSyntax::UnrecognizedChar(self.get_position(), c)),
+            Some(c) => syntax_error!(InvalidSyntax::UnrecognizedChar {
+                position: self.get_position(),
+                c
+            }),
             _ => None,
         };
     }
@@ -188,12 +197,12 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(_) => unreachable!(),
             None => {
                 self.position.next();
-                syntax_error!(InvalidSyntax::UnclosedCharDelimeter(
+                syntax_error!(InvalidSyntax::UnclosedCharDelimeter {
                     start,
-                    self.get_position(),
-                    '"',
-                    None,
-                ))
+                    end: self.get_position(),
+                    delimiter: '"',
+                    found: None,
+                })
             }
         }
     }
@@ -204,7 +213,12 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
 
         match self.chars.next() {
             Some(c) => result = c,
-            None => return syntax_error!(InvalidSyntax::UnexpectedChar(self.get_position(), '\'')),
+            None => {
+                return syntax_error!(InvalidSyntax::UnexpectedChar {
+                    position: self.get_position(),
+                    c: '\''
+                })
+            }
         }
 
         self.position.next();
@@ -215,19 +229,19 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             }
             Some(c) => {
                 self.position.next();
-                syntax_error!(InvalidSyntax::UnclosedCharDelimeter(
+                syntax_error!(InvalidSyntax::UnclosedCharDelimeter {
                     start,
-                    self.get_position(),
-                    '\'',
-                    Some(c),
-                ))
+                    end: self.get_position(),
+                    delimiter: '\'',
+                    found: Some(c),
+                })
             }
-            None => syntax_error!(InvalidSyntax::UnclosedCharDelimeter(
+            None => syntax_error!(InvalidSyntax::UnclosedCharDelimeter {
                 start,
-                self.get_position(),
-                '\'',
-                None,
-            )),
+                end: self.get_position(),
+                delimiter: '\'',
+                found: None,
+            }),
         };
     }
 
@@ -248,10 +262,10 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                         number.push(self.chars.next().unwrap());
                         is_float = true;
                     } else {
-                        return syntax_error!(InvalidSyntax::MultipleFloatingPoints(
+                        return syntax_error!(InvalidSyntax::MultipleFloatingPoints {
                             start,
-                            self.get_position(),
-                        ));
+                            end: self.get_position(),
+                        });
                     }
                 }
                 _ => break,
