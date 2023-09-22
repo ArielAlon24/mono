@@ -8,14 +8,16 @@ use std::process::exit;
 #[derive(Default)]
 enum Mode {
     Tokenizer,
-    #[default]
     Parser,
+    #[default]
+    Evaluator,
 }
 
 fn run(mode: &Mode, code: &str) {
     match mode {
         Mode::Tokenizer => mono::tokenizer(code),
         Mode::Parser => mono::parser(code),
+        Mode::Evaluator => mono::evaluator(code),
     }
 }
 
@@ -25,7 +27,8 @@ fn usage() {
     eprintln!("");
     eprintln!("  Flags:");
     eprintln!("  -t          run the Tokenizer");
-    eprintln!("  -p          run the Tokenizer");
+    eprintln!("  -p          run the Parser");
+    eprintln!("  -e          run the Evaluator")
 }
 
 fn console(mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
@@ -69,10 +72,12 @@ fn main() {
         [_] => console(Mode::default()),
         [_, flag] if flag == "-t" => console(Mode::Tokenizer),
         [_, flag] if flag == "-p" => console(Mode::Parser),
+        [_, flag] if flag == "-e" => console(Mode::Evaluator),
         [_, flag] if flag.starts_with("-") => Err(format!("Unknown flag: {}", flag).into()),
         [_, path] => file(path, Mode::default()),
         [_, flag, path] if flag == "-t" => file(path, Mode::Tokenizer),
         [_, flag, path] if flag == "-p" => file(path, Mode::Parser),
+        [_, flag, path] if flag == "-e" => file(path, Mode::Evaluator),
         _ => Err("Invalid command line arguments".into()),
     };
 

@@ -2,8 +2,8 @@
                | Integer
                | Float
 
-<Power>        ::= <ArithAtom>
-               | <ArithAtom> [Pow <Factor>] *
+<Power>        ::= <Atom>
+               | <Atom> [Pow <Factor>] *
 
 <Factor>       ::= <Power>
                | Sub <Factor>
@@ -26,7 +26,8 @@
                | <Expr> [Equals <Expr>] *
                | <Expr> [NotEquals <Expr>] *
 
-<BoolAtom>     ::= <Comparison>
+<BoolAtom>     ::= LeftParen <BoolExpr> RightParen
+               | <Comparison>
                | Boolean
 
 <BoolFactor>   ::= <BoolAtom>

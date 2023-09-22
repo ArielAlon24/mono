@@ -99,7 +99,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_arith_atom(&mut self) -> ParserItem {
+    fn parse_atom(&mut self) -> ParserItem {
         if let None = self.tokenizer.peek() {
             return expected_error!(
                 vec![
@@ -134,11 +134,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_power(&mut self) -> ParserItem {
-        self.parse_binary_op(
-            &[TokenKind::Pow],
-            Self::parse_arith_atom,
-            Self::parse_factor,
-        )
+        self.parse_binary_op(&[TokenKind::Pow], Self::parse_atom, Self::parse_factor)
     }
 
     fn parse_factor(&mut self) -> ParserItem {
@@ -175,12 +171,20 @@ impl<'a> Parser<'a> {
 
     fn parse_bool_atom(&mut self) -> ParserItem {
         match self.tokenizer.peek() {
-            Some(Ok(token))
-                if [TokenKind::Boolean(false), TokenKind::Boolean(true)].contains(&token.kind) =>
+            Some(Ok(t)) if &t.kind == &TokenKind::LeftParen => {
+                let token = self.tokenizer.next().unwrap()?;
+                let bool_expr = self.parse_bool_expr()?;
+                match self.tokenizer.next() {
+                    Some(Ok(t)) if t.kind == TokenKind::RightParen => Ok(bool_expr),
+                    Some(Ok(end)) => unclosed_error!(token, Some(end), TokenKind::RightParen),
+                    _ => unclosed_error!(token, None, TokenKind::RightParen),
+                }
+            }
+            Some(Ok(t))
+                if t.kind == TokenKind::Boolean(true) || t.kind == TokenKind::Boolean(false) =>
             {
                 atom!(self.tokenizer.next().unwrap()?)
             }
-
             _ => self.parse_comparison(),
         }
     }

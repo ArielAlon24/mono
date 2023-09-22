@@ -279,7 +279,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         };
 
         if is_float {
-            return match number.parse::<f32>() {
+            return match number.parse::<f64>() {
                 Ok(float) => raw!(start, end, TokenKind::Float(float)),
                 _ => panic!("Couldn't parse float: {:?}", number),
             };
