@@ -1,4 +1,5 @@
 use crate::models::position::Position;
+use std::fmt;
 
 #[derive(Debug, PartialEq, Clone)]
 #[allow(dead_code)]
@@ -82,5 +83,14 @@ impl Token {
 
     pub fn new(start: Position, end: Option<Position>, kind: TokenKind) -> Self {
         Self { start, end, kind }
+    }
+}
+
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.end {
+            Some(end) => write!(f, "<{}-{} {:?}>", self.start, end, self.kind),
+            None => write!(f, "<{} {:?}>", self.start, self.kind),
+        }
     }
 }

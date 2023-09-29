@@ -1,2 +1,2 @@
-pub mod Evaluator;
+pub mod evaluator;
 pub mod value;

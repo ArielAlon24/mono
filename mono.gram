@@ -1,42 +1,38 @@
-<Atom>         ::= LeftParen <Expr> RightParen
-               | Integer
-               | Float
+<Atom>          ::= LeftParen <Expr> RightParen
+                | Integer
+                | Float
 
-<Power>        ::= <Atom>
-               | <Atom> [Pow <Factor>] *
+<Power>         ::= <Atom>
+                | <Atom> [Pow <Factor>] *
 
-<Factor>       ::= <Power>
-               | Sub <Factor>
-               | Add <Factor>
+<Factor>        ::= <Power>
+                | Sub <Factor>
+                | Add <Factor>
 
-<Term>         ::= <Factor>
-               | <Factor> [Mul <Factor>] *
-               | <Factor> [Div <Factor>] *
-               | <Factor> [Mod <Factor>] *
+<Term>          ::= <Factor>
+                | <Factor> [Mul <Factor>] *
+                | <Factor> [Div <Factor>] *
+                | <Factor> [Mod <Factor>] *
 
-<Expr>         ::= <Term>
-               | <Term> [Add <Term>] *
-               | <Term> [Min <Term>] *
+<Expr>          ::= <Term>
+                | <Term> [Add <Term>] *
+                | <Term> [Min <Term>] *
 
-<Comparison>   ::= <Expr>
-               | <Expr> LessThan <Expr>
-               | <Expr> [LessThanEq <Expr>] *
-               | <Expr> [Greater <Expr>] *
-               | <Expr> [GreaterEq <Expr>] *
-               | <Expr> [Equals <Expr>] *
-               | <Expr> [NotEquals <Expr>] *
+<Comparison>    ::= <Expr>
+                | <Expr> LessThan <Expr>
+                | <Expr> [LessThanEq <Expr>] *
+                | <Expr> [Greater <Expr>] *
+                | <Expr> [GreaterEq <Expr>] *
+                | <Expr> [Equals <Expr>] *
+                | <Expr> [NotEquals <Expr>] *
 
-<BoolAtom>     ::= LeftParen <BoolExpr> RightParen
-               | <Comparison>
-               | Boolean
+<BoolFactor>    ::= <BoolAtom>
+                | Not <Comparison>
 
-<BoolFactor>   ::= <BoolAtom>
-               | Not <BoolFactor>
+<BoolTerm>      ::= <BoolFactor> 
+                | <BoolFactor> [And <BoolFactor>] *
 
-<BoolTerm>     ::= <BoolFactor> 
-               ::= <BoolFactor> [And <BoolFactor>] *
-
-<BoolExpr>     ::= <BoolTerm>
-               | <BoolTerm> [Or <BoolTerm>] *
+<BoolExpr>      ::= <BoolTerm>
+                | <BoolTerm> [Or <BoolTerm>] *
 
 

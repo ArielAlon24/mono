@@ -1,4 +1,5 @@
 use super::position::Position;
+use crate::evaluator::value::Value;
 use crate::tokenizer::token::{Token, TokenKind};
 
 #[derive(Debug, PartialEq)]
@@ -37,6 +38,11 @@ pub enum InvalidSyntax {
     },
     MultipleExpressions {
         position: Position,
+    },
+    InvalidOperation {
+        operator: TokenKind,
+        right: Option<Value>,
+        left: Value,
     },
 }
 

@@ -3,7 +3,7 @@ pub mod models;
 pub mod parser;
 pub mod tokenizer;
 
-use crate::evaluator::Evaluator::Evaluator;
+use crate::evaluator::evaluator::Evaluator;
 use crate::parser::parser::Parser;
 use crate::tokenizer::tokenizer::Tokenizer;
 
@@ -24,7 +24,7 @@ pub fn parser(code: &str) {
     let tokenizer = Tokenizer::new(code.chars());
     let mut parser = Parser::new(tokenizer);
     match parser.parse() {
-        Ok(expression) => println!("Ok:\t{:?}", expression),
+        Ok(tree) => println!("Ok:\n{}", tree),
         Err(error) => {
             eprintln!("Error:\t{:?}", error);
             return;

@@ -2,7 +2,6 @@ use crate::models::error::Error;
 use crate::models::error::InvalidSyntax;
 use crate::parser::node::Node;
 use crate::tokenizer::token::{Token, TokenKind};
-
 use crate::Tokenizer;
 use core::str::Chars;
 use std::iter::Peekable;
@@ -114,14 +113,16 @@ impl<'a> Parser<'a> {
         let token = self.tokenizer.next().unwrap()?;
         match token.kind {
             TokenKind::LeftParen => {
-                let expr = self.parse_expr()?;
+                let bool_expr = self.parse_bool_expr()?;
                 match self.tokenizer.next() {
-                    Some(Ok(t)) if t.kind == TokenKind::RightParen => Ok(expr),
+                    Some(Ok(t)) if t.kind == TokenKind::RightParen => Ok(bool_expr),
                     Some(Ok(end)) => unclosed_error!(token, Some(end), TokenKind::RightParen),
                     _ => unclosed_error!(token, None, TokenKind::RightParen),
                 }
             }
             TokenKind::Integer(_) | TokenKind::Float(_) => atom!(token),
+
+            TokenKind::Boolean(_) => atom!(token),
             _ => expected_error!(
                 vec![
                     TokenKind::LeftParen,
@@ -169,31 +170,11 @@ impl<'a> Parser<'a> {
         )
     }
 
-    fn parse_bool_atom(&mut self) -> ParserItem {
-        match self.tokenizer.peek() {
-            Some(Ok(t)) if &t.kind == &TokenKind::LeftParen => {
-                let token = self.tokenizer.next().unwrap()?;
-                let bool_expr = self.parse_bool_expr()?;
-                match self.tokenizer.next() {
-                    Some(Ok(t)) if t.kind == TokenKind::RightParen => Ok(bool_expr),
-                    Some(Ok(end)) => unclosed_error!(token, Some(end), TokenKind::RightParen),
-                    _ => unclosed_error!(token, None, TokenKind::RightParen),
-                }
-            }
-            Some(Ok(t))
-                if t.kind == TokenKind::Boolean(true) || t.kind == TokenKind::Boolean(false) =>
-            {
-                atom!(self.tokenizer.next().unwrap()?)
-            }
-            _ => self.parse_comparison(),
-        }
-    }
-
     fn parse_bool_factor(&mut self) -> ParserItem {
         self.parse_unary_op(
             &[TokenKind::Not],
             Self::parse_bool_factor,
-            Self::parse_bool_atom,
+            Self::parse_comparison,
         )
     }
 
