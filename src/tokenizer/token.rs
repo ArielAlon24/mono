@@ -66,8 +66,8 @@ impl TokenKind {
 
 #[derive(Debug, PartialEq)]
 pub struct Token {
-    start: Position,
-    end: Option<Position>,
+    pub start: Position,
+    pub end: Option<Position>,
     pub kind: TokenKind,
 }
 
@@ -89,7 +89,7 @@ impl Token {
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.end {
-            Some(end) => write!(f, "<{}-{} {:?}>", self.start, end, self.kind),
+            Some(end) => write!(f, "<{}:{} {:?}>", self.start, end, self.kind),
             None => write!(f, "<{} {:?}>", self.start, self.kind),
         }
     }

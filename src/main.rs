@@ -13,6 +13,10 @@ enum Mode {
     Evaluator,
 }
 
+fn clear_screen() {
+    print!("\x1B[2J\x1B[1;1H");
+}
+
 fn run(mode: &Mode, code: &str) {
     match mode {
         Mode::Tokenizer => mono::tokenizer(code),
@@ -32,18 +36,20 @@ fn usage() {
 }
 
 fn console(mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
+    clear_screen();
     let mut buffer = String::new();
     let stdin = io::stdin();
     let mut handle = stdin.lock();
 
     loop {
-        print!("\n> ");
+        print!("> ");
         io::stdout().flush()?;
         buffer.clear();
         handle.read_line(&mut buffer)?;
 
         match buffer.trim_end_matches('\n') {
             "quit" => return Ok(()),
+            "clear" => clear_screen(),
             code => run(&mode, code),
         }
     }

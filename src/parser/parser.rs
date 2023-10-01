@@ -24,11 +24,10 @@ macro_rules! unary_op {
     };
 }
 
-macro_rules! expected_error {
-    ($expected:expr, $found:expr) => {
-        Err(Error::invalid_syntax(InvalidSyntax::InvalidToken {
-            expected: $expected,
-            found: $found,
+macro_rules! unexpected_token {
+    ($token:expr) => {
+        Err(Error::invalid_syntax(InvalidSyntax::UnexpectedToken {
+            token: $token,
         }))
     };
 }
@@ -100,14 +99,7 @@ impl<'a> Parser<'a> {
 
     fn parse_atom(&mut self) -> ParserItem {
         if let None = self.tokenizer.peek() {
-            return expected_error!(
-                vec![
-                    TokenKind::LeftParen,
-                    TokenKind::Integer(0),
-                    TokenKind::Float(0.0)
-                ],
-                None
-            );
+            return unexpected_token!(None);
         }
 
         let token = self.tokenizer.next().unwrap()?;
@@ -123,14 +115,7 @@ impl<'a> Parser<'a> {
             TokenKind::Integer(_) | TokenKind::Float(_) => atom!(token),
 
             TokenKind::Boolean(_) => atom!(token),
-            _ => expected_error!(
-                vec![
-                    TokenKind::LeftParen,
-                    TokenKind::Integer(0),
-                    TokenKind::Float(0.0)
-                ],
-                Some(token)
-            ),
+            _ => unexpected_token!(Some(token)),
         }
     }
 

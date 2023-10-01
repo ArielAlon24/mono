@@ -6,17 +6,34 @@ pub mod tokenizer;
 use crate::evaluator::evaluator::Evaluator;
 use crate::parser::parser::Parser;
 use crate::tokenizer::tokenizer::Tokenizer;
+use colored::*;
+
+macro_rules! ereport {
+    ($color:ident, $header:expr, $error:expr) => {
+        eprintln!("{}\n{}\n", $header.$color().bold(), ($error).$color())
+    };
+}
+
+macro_rules! report {
+    ($color:ident, $header:expr, $object:expr) => {
+        println!("{}\n{}\n", $header.$color().bold(), ($object).$color())
+    };
+}
 
 pub fn tokenizer(code: &str) {
     let tok = Tokenizer::new(code.chars());
-    for token in tok {
-        match token {
-            Ok(token) => println!("Token:\t{:?}", token),
-            Err(error) => {
-                eprintln!("Error:\t{:?}", error);
-                return;
-            }
+    let results: Result<Vec<_>, _> = tok.collect();
+
+    match results {
+        Ok(tokens) => {
+            let tokens_string = tokens
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .join("\n");
+            report!(blue, "Ok", tokens_string);
         }
+        Err(error) => ereport!(red, "Error", error.to_string()),
     }
 }
 
@@ -24,11 +41,8 @@ pub fn parser(code: &str) {
     let tokenizer = Tokenizer::new(code.chars());
     let mut parser = Parser::new(tokenizer);
     match parser.parse() {
-        Ok(tree) => println!("Ok:\n{}", tree),
-        Err(error) => {
-            eprintln!("Error:\t{:?}", error);
-            return;
-        }
+        Ok(tree) => report!(purple, "Ok", tree.to_string()),
+        Err(error) => ereport!(red, "Error", error.to_string()),
     }
 }
 
@@ -36,16 +50,10 @@ pub fn evaluator(code: &str) {
     let tokenizer = Tokenizer::new(code.chars());
     let mut parser = Parser::new(tokenizer);
     match parser.parse() {
-        Err(error) => {
-            eprintln!("Error:\t{:?}", error);
-            return;
-        }
+        Err(error) => ereport!(red, "Parsing Error", error.to_string()),
         Ok(ast) => match Evaluator::evaluate(ast) {
-            Err(error) => {
-                eprintln!("Error:\t{:?}", error);
-                return;
-            }
-            Ok(value) => println!("Ok:\t{:?}", value),
+            Err(error) => ereport!(red, "Evaluator Error", error.to_string()),
+            Ok(value) => report!(green, "Ok", format!("{:?}", value)),
         },
     }
 }

@@ -197,12 +197,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(_) => unreachable!(),
             None => {
                 self.position.next();
-                syntax_error!(InvalidSyntax::UnclosedCharDelimeter {
-                    start,
-                    end: self.get_position(),
-                    delimiter: '"',
-                    found: None,
-                })
+                syntax_error!(InvalidSyntax::UnclosedStringDelimeter { start })
             }
         }
     }
@@ -232,14 +227,12 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 syntax_error!(InvalidSyntax::UnclosedCharDelimeter {
                     start,
                     end: self.get_position(),
-                    delimiter: '\'',
                     found: Some(c),
                 })
             }
             None => syntax_error!(InvalidSyntax::UnclosedCharDelimeter {
                 start,
                 end: self.get_position(),
-                delimiter: '\'',
                 found: None,
             }),
         };

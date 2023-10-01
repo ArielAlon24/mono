@@ -17,11 +17,11 @@ impl Node {
         last: bool,
     ) -> fmt::Result {
         let (current_prefix, child_prefix) = if is_root {
-            (String::from(prefix), String::from(" "))
+            (String::from(prefix), String::from(""))
         } else if last {
-            (format!("{}└─ ", prefix), format!("{}    ", prefix))
+            (format!("{}└──── ", prefix), format!("{}      ", prefix))
         } else {
-            (format!("{}├─ ", prefix), format!("{}│   ", prefix))
+            (format!("{}├──── ", prefix), format!("{}│     ", prefix))
         };
 
         match self {
