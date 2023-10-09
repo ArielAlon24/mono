@@ -39,7 +39,7 @@ pub type TokenizerItem = Option<Result<Token, Error>>;
 
 pub struct Tokenizer<Chars: Iterator<Item = char>> {
     chars: Chars,
-    current: TokenizerItem,
+    overhead: TokenizerItem,
     position: Position,
 }
 
@@ -47,7 +47,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
     pub fn new(chars: Chars) -> Self {
         let mut tokenizer = Self {
             chars: chars.peekable(),
-            current: None,
+            overhead: None,
             position: Position::new(1, 0),
         };
         tokenizer.next();
@@ -55,7 +55,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
     }
 
     pub fn peek(&mut self) -> &TokenizerItem {
-        &self.current
+        &self.overhead
     }
 
     pub fn get_position(&self) -> Position {
@@ -64,107 +64,128 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
 
     fn _next(&mut self) -> TokenizerItem {
         self.position.next();
-        return match self.chars.next() {
-            Some(' ') => self._next(),
-            Some('\n') => {
-                let token = single!(self.position, TokenKind::NewLine);
-                self.position.newline();
-                token
+
+        if let Some(c) = self.chars.next() {
+            match c {
+                ' ' => self._next(),
+                '+' => single!(self.position, TokenKind::Add),
+                '*' => single!(self.position, TokenKind::Mul),
+                '/' => single!(self.position, TokenKind::Div),
+                '%' => single!(self.position, TokenKind::Mod),
+                '^' => single!(self.position, TokenKind::Pow),
+                '(' => single!(self.position, TokenKind::LeftParen),
+                ')' => single!(self.position, TokenKind::RightParen),
+                '{' => single!(self.position, TokenKind::LeftCurly),
+                '}' => single!(self.position, TokenKind::RightCurly),
+                '[' => single!(self.position, TokenKind::LeftBracket),
+                ']' => single!(self.position, TokenKind::RightBracket),
+                '\n' => self.next_line(),
+                '-' => self.next_dash(),
+                '=' => self.next_equals(),
+                '!' => self.next_exclemation(),
+                '>' => self.next_greater(),
+                '<' => self.next_less_than(),
+                '"' => self.next_string(),
+                '\'' => self.next_char(),
+                c if c.is_ascii_alphabetic() || c == '_' => self.next_identifier(c),
+                c if c.is_numeric() => self.next_number(c),
+                c => syntax_error!(InvalidSyntax::UnrecognizedChar {
+                    position: self.position.clone(),
+                    c
+                }),
             }
-            Some(c) if c.is_ascii_alphabetic() || c == '_' => self.next_identifier(c),
-            Some(c) if c == '"' => self.next_string(),
-            Some(c) if c == '\'' => self.next_char(),
-            Some(c) if c.is_numeric() => self.next_number(c),
-            Some('+') => single!(self.position, TokenKind::Add),
-            Some('-') => match self.chars.peek() {
-                Some('>') => {
-                    let start = self.get_position();
-                    self.position.next();
-                    self.chars.next();
-                    multi!(start, self.position, TokenKind::Arrow)
-                }
-                _ => single!(self.position, TokenKind::Sub),
-            },
-            Some('*') => single!(self.position, TokenKind::Mul),
-            Some('/') => single!(self.position, TokenKind::Div),
-            Some('%') => single!(self.position, TokenKind::Mod),
-            Some('^') => single!(self.position, TokenKind::Pow),
-            Some('=') => match self.chars.peek() {
-                Some('>') => {
-                    let start = self.get_position();
-                    self.chars.next();
-                    self.position.next();
-                    multi!(start, self.position, TokenKind::DoubleArrow)
-                }
-                Some('=') => {
-                    let start = self.get_position();
-                    self.chars.next();
-                    self.position.next();
-                    multi!(start, self.position, TokenKind::Equals)
-                }
-                _ => single!(self.position, TokenKind::Assignment),
-            },
-            Some('!') => match self.chars.next() {
-                Some('=') => {
-                    let start = self.get_position();
-                    self.position.next();
-                    multi!(start, self.position, TokenKind::NotEquals)
-                }
-                Some(_) => {
-                    self.position.next();
-                    syntax_error!(InvalidSyntax::UnexpectedChar {
-                        position: self.get_position(),
-                        c: '!'
-                    })
-                }
-                None => syntax_error!(InvalidSyntax::UnexpectedChar {
+        } else {
+            None
+        }
+    }
+
+    fn next_line(&mut self) -> TokenizerItem {
+        let token = single!(self.position, TokenKind::NewLine);
+        self.position.newline();
+        token
+    }
+
+    fn next_dash(&mut self) -> TokenizerItem {
+        match self.chars.peek() {
+            Some('>') => {
+                let start = self.get_position();
+                self.position.next();
+                self.chars.next();
+                multi!(start, self.position, TokenKind::Arrow)
+            }
+            _ => single!(self.position, TokenKind::Sub),
+        }
+    }
+
+    fn next_equals(&mut self) -> TokenizerItem {
+        match self.chars.peek() {
+            Some('>') => {
+                let start = self.get_position();
+                self.chars.next();
+                self.position.next();
+                multi!(start, self.position, TokenKind::DoubleArrow)
+            }
+            Some('=') => {
+                let start = self.get_position();
+                self.chars.next();
+                self.position.next();
+                multi!(start, self.position, TokenKind::Equals)
+            }
+            _ => single!(self.position, TokenKind::Assignment),
+        }
+    }
+
+    fn next_exclemation(&mut self) -> TokenizerItem {
+        match self.chars.next() {
+            Some('=') => {
+                let start = self.get_position();
+                self.position.next();
+                multi!(start, self.position, TokenKind::NotEquals)
+            }
+            _ => {
+                self.position.next();
+                syntax_error!(InvalidSyntax::UnexpectedChar {
                     position: self.get_position(),
                     c: '!'
-                }),
-            },
-            Some('>') => match self.chars.peek() {
-                Some('=') => {
-                    let start = self.get_position();
-                    self.chars.next();
-                    self.position.next();
-                    multi!(start, self.position, TokenKind::GreaterEq)
-                }
-                _ => single!(self.position, TokenKind::Greater),
-            },
-            Some('<') => match self.chars.peek() {
-                Some('=') => {
-                    let start = self.get_position();
-                    self.chars.next();
-                    self.position.next();
-                    multi!(start, self.position, TokenKind::LessThanEq)
-                }
-                _ => single!(self.position, TokenKind::LessThan),
-            },
-            Some('(') => single!(self.position, TokenKind::LeftParen),
-            Some(')') => single!(self.position, TokenKind::RightParen),
-            Some('{') => single!(self.position, TokenKind::LeftCurly),
-            Some('}') => single!(self.position, TokenKind::RightCurly),
-            Some('[') => single!(self.position, TokenKind::LeftBracket),
-            Some(']') => single!(self.position, TokenKind::RightBracket),
-            Some(c) => syntax_error!(InvalidSyntax::UnrecognizedChar {
-                position: self.get_position(),
-                c
-            }),
-            _ => None,
-        };
+                })
+            }
+        }
+    }
+
+    fn next_greater(&mut self) -> TokenizerItem {
+        match self.chars.peek() {
+            Some('=') => {
+                let start = self.get_position();
+                self.chars.next();
+                self.position.next();
+                multi!(start, self.position, TokenKind::GreaterEq)
+            }
+            _ => single!(self.position, TokenKind::Greater),
+        }
+    }
+
+    fn next_less_than(&mut self) -> TokenizerItem {
+        match self.chars.peek() {
+            Some('=') => {
+                let start = self.get_position();
+                self.chars.next();
+                self.position.next();
+                multi!(start, self.position, TokenKind::LessThanEq)
+            }
+            _ => single!(self.position, TokenKind::LessThan),
+        }
     }
 
     fn next_identifier(&mut self, c: char) -> TokenizerItem {
         let start = self.get_position();
         let mut identifier = String::from(c);
-        loop {
-            match self.chars.peek() {
-                Some(&c) if c.is_ascii_alphabetic() || c.is_numeric() || c == '_' => {
-                    self.position.next();
-                    self.chars.next();
-                    identifier.push(c);
-                }
-                _ => break,
+
+        while let Some(c) = self.chars.peek() {
+            if c.is_ascii_alphabetic() || c.is_numeric() || c == &'_' {
+                self.position.next();
+                identifier.push(self.chars.next().unwrap());
+            } else {
+                break;
             }
         }
 
@@ -174,7 +195,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(self.position.clone())
         };
 
-        match TokenKind::str_to_identifier(&identifier) {
+        match TokenKind::from_str(&identifier) {
             Some(token_kind) => raw!(start, end, token_kind),
             _ => raw!(start, end, TokenKind::Identifier(identifier)),
         }
@@ -187,9 +208,8 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             if c == '"' {
                 break;
             }
-            self.chars.next();
             self.position.next();
-            string.push(c);
+            string.push(self.chars.next().unwrap());
         }
 
         match self.chars.next() {
@@ -207,7 +227,10 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         let result: char;
 
         match self.chars.next() {
-            Some(c) => result = c,
+            Some(c) => {
+                result = c;
+                self.position.next();
+            }
             None => {
                 return syntax_error!(InvalidSyntax::UnexpectedChar {
                     position: self.get_position(),
@@ -216,7 +239,6 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             }
         }
 
-        self.position.next();
         return match self.chars.next() {
             Some('\'') => {
                 self.position.next();
@@ -251,15 +273,14 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 }
                 Some('.') => {
                     self.position.next();
-                    if !is_float {
-                        number.push(self.chars.next().unwrap());
-                        is_float = true;
-                    } else {
+                    if is_float {
                         return syntax_error!(InvalidSyntax::MultipleFloatingPoints {
                             start,
                             end: self.get_position(),
                         });
                     }
+                    number.push(self.chars.next().unwrap());
+                    is_float = true;
                 }
                 _ => break,
             }
@@ -272,14 +293,20 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         };
 
         if is_float {
-            return match number.parse::<f64>() {
+            return match number.parse::<f32>() {
                 Ok(float) => raw!(start, end, TokenKind::Float(float)),
-                _ => panic!("Couldn't parse float: {:?}", number),
+                _ => syntax_error!(InvalidSyntax::InvalidFloatSize {
+                    start: start,
+                    end: end.unwrap(),
+                }),
             };
         }
         match number.parse::<i32>() {
             Ok(int) => raw!(start, end, TokenKind::Integer(int)),
-            _ => panic!("Couldn't parse integer: {:?}", number),
+            _ => syntax_error!(InvalidSyntax::InvalidIntegerSize {
+                start: start,
+                end: end.unwrap(),
+            }),
         }
     }
 }
@@ -288,8 +315,8 @@ impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
     type Item = Result<Token, Error>;
 
     fn next(&mut self) -> Option<Result<Token, Error>> {
-        let current = self.current.take();
-        self.current = self._next();
+        let current = self.overhead.take();
+        self.overhead = self._next();
         current
     }
 }

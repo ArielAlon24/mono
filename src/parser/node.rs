@@ -25,14 +25,14 @@ impl Node {
         };
 
         match self {
-            Node::Atom(token) => write!(f, "{}{}\n", current_prefix, token),
+            Node::Atom(token) => write!(f, "{}Atom {}\n", current_prefix, token),
             Node::BinaryOp(left, token, right) => {
-                write!(f, "{}{}\n", current_prefix, token)?;
+                write!(f, "{}BinaryOp {}\n", current_prefix, token)?;
                 left.format_tree(f, &child_prefix, false, false)?;
                 right.format_tree(f, &child_prefix, false, true)
             }
             Node::UnaryOp(token, node) => {
-                write!(f, "{}{}\n", current_prefix, token)?;
+                write!(f, "{}UnaryOp {}\n", current_prefix, token)?;
                 node.format_tree(f, &child_prefix, false, true)
             }
         }

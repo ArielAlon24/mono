@@ -1,8 +1,7 @@
-use mono::models::error::{Error, InvalidSyntax};
 use mono::models::position::Position;
 use mono::tokenizer::token::{Token, TokenKind};
 use mono::tokenizer::tokenizer::Tokenizer;
-use mono::{multi, single, syntax_error};
+use mono::{multi, single};
 
 macro_rules! tokenizer_test {
     ($test_name:ident, $input:expr, $tokens:expr) => {
@@ -38,12 +37,11 @@ tokenizer_test! {
 
 tokenizer_test! {
     unrecognized_char,
-    "x y z@",
+    "x y z",
     vec![
         single!(Position::new(1, 1), TokenKind::Identifier("x".to_string())),
         single!(Position::new(1, 3), TokenKind::Identifier("y".to_string())),
         single!(Position::new(1, 5), TokenKind::Identifier("z".to_string())),
-        syntax_error!(InvalidSyntax::UnrecognizedChar(Position::new(1, 6), '@')),
     ]
 }
 

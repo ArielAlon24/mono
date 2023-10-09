@@ -35,8 +35,17 @@ fn usage() {
     eprintln!("  -e          run the Evaluator")
 }
 
+fn logo() {
+    println!();
+    println!(" ╭╮ ╭╮ ╭╮ ╭╮  ╷ ╭╮ ");
+    println!(" │╰ ╯│ ││ │ ╲ │ ││ ");
+    println!(" ╵   ╵ ╰╯ ╵  ╰╯ ╰╯ ");
+    println!();
+}
+
 fn console(mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
     clear_screen();
+    logo();
     let mut buffer = String::new();
     let stdin = io::stdin();
     let mut handle = stdin.lock();
@@ -47,7 +56,7 @@ fn console(mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
         buffer.clear();
         handle.read_line(&mut buffer)?;
 
-        match buffer.trim_end_matches('\n') {
+        match buffer.trim() {
             "quit" => return Ok(()),
             "clear" => clear_screen(),
             code => run(&mode, code),

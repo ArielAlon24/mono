@@ -16,7 +16,7 @@ pub enum TokenKind {
     Character(char),
     String(String),
     Integer(i32),
-    Float(f64),
+    Float(f32),
     Boolean(bool),
 
     // Operators
@@ -51,11 +51,11 @@ pub enum TokenKind {
 }
 
 impl TokenKind {
-    pub fn str_to_identifier(identifier: &str) -> Option<Self> {
+    pub fn from_str(identifier: &str) -> Option<Self> {
         match identifier {
-            "true" => Some(Self::Boolean(true)),
-            "false" => Some(Self::Boolean(false)),
-            "none" => Some(Self::None),
+            "True" => Some(Self::Boolean(true)),
+            "False" => Some(Self::Boolean(false)),
+            "None" => Some(Self::None),
             "not" => Some(Self::Not),
             "and" => Some(Self::And),
             "or" => Some(Self::Or),

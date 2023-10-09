@@ -12,19 +12,7 @@ macro_rules! atom {
     };
 }
 
-macro_rules! binary_op {
-    ($left:expr, $operator:expr, $right:expr) => {
-        Box::new(Node::BinaryOp($left, $operator, $right))
-    };
-}
-
-macro_rules! unary_op {
-    ($operator:expr, $token:expr) => {
-        Box::new(Node::UnaryOp($operator, $token))
-    };
-}
-
-macro_rules! unexpected_token {
+macro_rules! unexpected_error {
     ($token:expr) => {
         Err(Error::invalid_syntax(InvalidSyntax::UnexpectedToken {
             token: $token,
@@ -78,7 +66,11 @@ impl<'a> Parser<'a> {
             if !operators.contains(&token.kind) {
                 break;
             }
-            root = binary_op!(root, self.tokenizer.next().unwrap()?, right(self)?);
+            root = Box::new(Node::BinaryOp(
+                root,
+                self.tokenizer.next().unwrap()?,
+                right(self)?,
+            ));
         }
         Ok(root)
     }
@@ -90,16 +82,17 @@ impl<'a> Parser<'a> {
         defualt: fn(&mut Self) -> ParserItem,
     ) -> ParserItem {
         match self.tokenizer.peek() {
-            Some(Ok(token)) if operators.contains(&token.kind) => {
-                Ok(unary_op!(self.tokenizer.next().unwrap()?, operand(self)?))
-            }
+            Some(Ok(token)) if operators.contains(&token.kind) => Ok(Box::new(Node::UnaryOp(
+                self.tokenizer.next().unwrap()?,
+                operand(self)?,
+            ))),
             _ => defualt(self),
         }
     }
 
     fn parse_atom(&mut self) -> ParserItem {
         if let None = self.tokenizer.peek() {
-            return unexpected_token!(None);
+            return unexpected_error!(None);
         }
 
         let token = self.tokenizer.next().unwrap()?;
@@ -113,9 +106,8 @@ impl<'a> Parser<'a> {
                 }
             }
             TokenKind::Integer(_) | TokenKind::Float(_) => atom!(token),
-
             TokenKind::Boolean(_) => atom!(token),
-            _ => unexpected_token!(Some(token)),
+            _ => unexpected_error!(Some(token)),
         }
     }
 

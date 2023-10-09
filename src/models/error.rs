@@ -22,6 +22,14 @@ impl fmt::Display for Error {
 
 #[derive(Debug, PartialEq)]
 pub enum InvalidSyntax {
+    InvalidIntegerSize {
+        start: Position,
+        end: Position,
+    },
+    InvalidFloatSize {
+        start: Position,
+        end: Position,
+    },
     UnclosedCharDelimeter {
         start: Position,
         end: Position,
@@ -58,6 +66,14 @@ pub enum InvalidSyntax {
 impl fmt::Display for InvalidSyntax {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::InvalidIntegerSize {
+                start,
+                end,
+            } => write!(f, "Invalid integer size at {} until {}. Integer i must be in the range of {} >= i >= {}.", start, end, i32::MAX, i32::MIN),
+            Self::InvalidFloatSize {
+                start,
+                end,
+            } => write!(f, "Invalid float size at {} until {}. Float f must be in the range of {} >= f >= {}.", start, end, f32::MAX, f32::MIN),
             Self::UnclosedCharDelimeter {
                 start,
                 end,

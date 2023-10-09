@@ -15,7 +15,7 @@ macro_rules! invalid_operation {
 #[derive(Debug, PartialEq)]
 pub enum Value {
     Integer(i32),
-    Float(f64),
+    Float(f32),
     Boolean(bool),
 }
 
@@ -132,8 +132,8 @@ impl Value {
                 Ok(Value::Integer((a as f64).powi(b as i32) as i32))
             }
             (Value::Integer(_), Value::Integer(_)) => todo!(),
-            (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((a as f64).powf(b))),
-            (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.powf(b as f64))),
+            (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((a as f32).powf(b))),
+            (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.powf(b as f32))),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.powf(b))),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
