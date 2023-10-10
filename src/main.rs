@@ -1,3 +1,7 @@
+/*
+This file is the implementation of the Mono CLI
+*/
+
 use mono;
 use std::env;
 use std::fs::File;
@@ -5,6 +9,13 @@ use std::io::{self, BufRead, Read, Write};
 use std::path::Path;
 use std::process::exit;
 
+/*
+--- Mode (enum) ---
+
+The Mode enum includes all the modes which the
+Mono CLI can run in.
+Note: the Evaluator mode is the default mode.
+*/
 #[derive(Default)]
 enum Mode {
     Tokenizer,
@@ -13,6 +24,10 @@ enum Mode {
     Evaluator,
 }
 
+/*
+The clear_screen function clears the screen of the user's
+terminal / cmd depending on his operating system.
+*/
 fn clear_screen() {
     if cfg!(windows) {
         std::process::Command::new("cmd")
@@ -23,6 +38,11 @@ fn clear_screen() {
         print!("\x1B[2J\x1B[1;1H");
     }
 }
+
+/*
+The run function takes a mode and code arguments, and runs
+the code given in the mode given.
+*/
 fn run(mode: &Mode, code: &str) {
     match mode {
         Mode::Tokenizer => mono::tokenizer(code),
@@ -31,6 +51,10 @@ fn run(mode: &Mode, code: &str) {
     }
 }
 
+/*
+The usage function prints out to the stderr the usage
+of the Mono Cli.
+*/
 fn usage() {
     eprintln!("Usage:");
     eprintln!("  ./mono <flag> <path>");
@@ -41,6 +65,10 @@ fn usage() {
     eprintln!("  -e          run the Evaluator")
 }
 
+/*
+The logo function prints out a simple Unicode logo of
+the Mono programing language.
+*/
 fn logo() {
     println!();
     println!(" ╭╮ ╭╮ ╭╮ ╭╮  ╷ ╭╮ ");
@@ -49,6 +77,11 @@ fn logo() {
     println!();
 }
 
+/*
+The console function gets a mode argument and runs the
+console emulation of the REPL in that mode. If any non-Mono
+errors encountered they are returned.
+*/
 fn console(mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
     clear_screen();
     logo();
@@ -70,6 +103,11 @@ fn console(mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
+/*
+The file function gets a mode and file path to run,
+then it tries to run the file in that file path in the mode
+given. If any non-Mono errors encountered they are returned.
+*/
 fn file(path: &str, mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
     let path = Path::new(path);
     let mut file = File::open(&path)?;
@@ -88,6 +126,10 @@ fn file(path: &str, mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
     }
 }
 
+/*
+The main function runs the Cli. It matches the arguments given
+and preforms the correct action.
+*/
 fn main() {
     let result = match env::args().collect::<Vec<String>>().as_slice() {
         [_] => console(Mode::default()),

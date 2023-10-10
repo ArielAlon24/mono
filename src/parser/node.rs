@@ -1,6 +1,12 @@
 use crate::tokenizer::token::Token;
 use std::fmt;
 
+/*
+--- Node (enum) ---
+
+The Node enum represent every possible node and his
+attributes from the AST that is created by the Parser
+*/
 #[derive(Debug)]
 pub enum Node {
     Atom(Token),
@@ -9,6 +15,11 @@ pub enum Node {
 }
 
 impl Node {
+    /*
+    The format_tree method creates recursively an easy to
+    understand representation of the AST, by indenting forward
+    a child and applying like `tree` command Unicode art.
+    */
     pub fn format_tree(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -40,6 +51,10 @@ impl Node {
 }
 
 impl fmt::Display for Node {
+    /*
+    The fmt (toString) method takes the default formatter and
+    formats the self Node using the format_tree method.
+    */
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.format_tree(f, "", true, false)
     }

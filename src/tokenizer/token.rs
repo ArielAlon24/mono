@@ -1,8 +1,15 @@
 use crate::models::position::Position;
 use std::fmt;
 
+/*
+--- TokenKind (enum) ---
+
+The TokenKind enum contains every kind of token that can be
+fount inside Mono code.
+Note: builtin and identifier types include an attribute
+attached to them.
+*/
 #[derive(Debug, PartialEq, Clone)]
-#[allow(dead_code)]
 pub enum TokenKind {
     Identifier(String),
 
@@ -51,6 +58,11 @@ pub enum TokenKind {
 }
 
 impl TokenKind {
+    /*
+    The from_str method takes an identifier str and checks if it
+    is a builtin keyword. If it is, it returns the corresponding
+    keyword wrapped in Some option. Otherwise it returns None.
+    */
     pub fn from_str(identifier: &str) -> Option<Self> {
         match identifier {
             "True" => Some(Self::Boolean(true)),
@@ -64,6 +76,14 @@ impl TokenKind {
     }
 }
 
+/*
+--- Token (struct) ---
+
+The Token struct holds all information regarding a token,
+his kind, start and end position. If the token is of length
+1 (a single char) his end is marked as None. otherwise with
+the position wrapped in Some option.
+*/
 #[derive(Debug, PartialEq)]
 pub struct Token {
     pub start: Position,
@@ -72,6 +92,7 @@ pub struct Token {
 }
 
 impl Token {
+    // COMPERTAORS is an array of all comparison token kinds
     pub const COMPERATORS: [TokenKind; 6] = [
         TokenKind::Equals,
         TokenKind::NotEquals,
@@ -81,12 +102,22 @@ impl Token {
         TokenKind::LessThanEq,
     ];
 
+    /*
+    The new function is a constructor for a Token, it takes the
+    start and end positions and the token kind. Then returns
+    a Token struct made out of these arguments.
+    */
     pub fn new(start: Position, end: Option<Position>, kind: TokenKind) -> Self {
         Self { start, end, kind }
     }
 }
 
 impl fmt::Display for Token {
+    /*
+    The fmt (toString) method takes the default formatter and
+    formats the self Token for a more readable and user
+    friendly representation.
+    */
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.end {
             Some(end) => write!(f, "<{}:{} {:?}>", self.start, end, self.kind),

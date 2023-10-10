@@ -3,6 +3,13 @@ use crate::evaluator::value::Value;
 use crate::tokenizer::token::{Token, TokenKind};
 use std::fmt;
 
+/*
+--- Error (enum) ---
+
+The Error enum contains the two error types the can occur
+while running Mono code. And it serves as the Err return
+type for all interpreting related function and method.
+*/
 #[derive(Debug, PartialEq)]
 pub enum Error {
     InvalidSyntax(InvalidSyntax),
@@ -10,6 +17,10 @@ pub enum Error {
 }
 
 impl fmt::Display for Error {
+    /*
+    The fmt (toString) method takes the default formatter and
+    formats the self Error for a more readable error message.
+    */
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidSyntax(invalid_syntax) => {
@@ -20,6 +31,12 @@ impl fmt::Display for Error {
     }
 }
 
+/*
+--- InvalidSyntax (enum) ---
+
+The InvalidSyntax contains all possible InvalidSyntax errors
+and their corresponding attributes.
+*/
 #[derive(Debug, PartialEq)]
 pub enum InvalidSyntax {
     InvalidIntegerSize {
@@ -64,6 +81,11 @@ pub enum InvalidSyntax {
 }
 
 impl fmt::Display for InvalidSyntax {
+    /*
+    The fmt (toString) method takes the default formatter and
+    formats the self InvalidSyntax for a more readable and user
+    friendly error message.
+    */
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidIntegerSize {
@@ -134,6 +156,12 @@ impl fmt::Display for InvalidSyntax {
     }
 }
 
+/*
+--- Runtime (enum) ---
+
+The Runtime enum contains all possible Runtime errors and
+their corresponding attributes.
+*/
 #[derive(Debug, PartialEq)]
 pub enum Runtime {
     DivisionByZero {
@@ -147,6 +175,11 @@ pub enum Runtime {
 }
 
 impl fmt::Display for Runtime {
+    /*
+    The fmt (toString) method takes the default formatter and
+    formats the self Runtime for a more readable and user
+    friendly error message.
+    */
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::DivisionByZero { division } => {
@@ -168,10 +201,18 @@ impl fmt::Display for Runtime {
 }
 
 impl Error {
+    /*
+    The invalid_syntax function is an easier constructor for the
+    enum InvalidSyntax.
+    */
     pub fn invalid_syntax(kind: InvalidSyntax) -> Self {
         Error::InvalidSyntax(kind)
     }
 
+    /*
+    The runtime function is an easier constructor for the enum
+    Runtime.
+    */
     pub fn runtime(kind: Runtime) -> Self {
         Error::Runtime(kind)
     }

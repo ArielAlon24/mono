@@ -34,3 +34,9 @@ The following flags are available to customize your experience:
 - `-e` : Evaluates the input and prints the resulting value.
 
 By utilizing these flags, you can gain insights into various stages of Mono's execution process.
+
+### More on the REPL
+
+Currently as there is no function support in Mono the REPL has two built-in functions:
+- `quit` : Quits the REPL.
+- `clear` : Clears the screen. 

@@ -4,7 +4,11 @@ use crate::tokenizer::token::{Token, TokenKind};
 
 use core::iter::Peekable;
 
-// crating a token with `None` end position
+/*
+The single macro takes a position and token kind and creates
+a token with those attributes (meaning with end position of
+None) wrapped in an Ok result and Some option.
+*/
 #[macro_export]
 macro_rules! single {
     ($Position:expr, $TokenKind:expr) => {
@@ -12,7 +16,11 @@ macro_rules! single {
     };
 }
 
-// creating a token with `Some(Position)` end position.
+/*
+The multi macro takes a start and end positions, and a token
+kind and creates a token with those attributes wrapped in an
+Ok result and Some option.
+*/
 #[macro_export]
 macro_rules! multi {
     ($start:expr, $end:expr, $TokenKind:expr) => {
@@ -20,7 +28,11 @@ macro_rules! multi {
     };
 }
 
-// creating a token with `None` or `Some(Position)` end position.
+/*
+The raw macro is a shortened way of using the Token new
+function (constructor) and on the way wrapping it in Ok
+result and Some option.
+*/
 #[macro_export]
 macro_rules! raw {
     ($start:expr, $end:expr, $TokenKind:expr) => {
@@ -28,6 +40,11 @@ macro_rules! raw {
     };
 }
 
+/*
+The syntax_error macro takes an InvalidSyntax kind and
+creates an Error type out of it wrapped in Err result and
+Some option.
+*/
 #[macro_export]
 macro_rules! syntax_error {
     ($ErrorKind:expr) => {
@@ -35,8 +52,22 @@ macro_rules! syntax_error {
     };
 }
 
+// TokenizerItem is the return type of an iteration on the tokenizer iterator
 pub type TokenizerItem = Option<Result<Token, Error>>;
 
+/*
+--- Tokenizer (struct) ---
+
+The Tokenizer struct is responsible for tokenizing the raw
+input (Mono code files or REPL). In a way of implementing
+an iterator whose elements are Tokens or Errors, that way no
+memory is duplicated while creating this tokens.
+
+It uses an overhead TokenizerItem to make peeking possible,
+meaning the tokenizer knows every time one step ahead, and
+when the next function is called the result is already
+computed and the next after it is calculated.
+*/
 pub struct Tokenizer<Chars: Iterator<Item = char>> {
     chars: Chars,
     overhead: TokenizerItem,
@@ -44,6 +75,11 @@ pub struct Tokenizer<Chars: Iterator<Item = char>> {
 }
 
 impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
+    /*
+    The new function is the constructor for a tokenizer, it
+    takes an Character iterator of the raw input text and
+    returns a Tokenizer struct out of it.
+    */
     pub fn new(chars: Chars) -> Self {
         let mut tokenizer = Self {
             chars: chars.peekable(),
@@ -54,14 +90,32 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         tokenizer
     }
 
+    /*
+    The peek method returns a reference for the next item of the
+    tokenizer iterator (In reality this value is stored) inside
+    the tokenizer and is not calculated on call.
+    */
     pub fn peek(&mut self) -> &TokenizerItem {
         &self.overhead
     }
 
+    /*
+    The get_position method returns a deep copy of the current
+    tokenizer position.
+    */
     pub fn get_position(&self) -> Position {
         self.position.clone()
     }
 
+    /*
+    The _next method is the helper method of the next method
+    that is implement for the iterator trait (interface). It
+    uses a match block to check the current char and based on it
+    preforms the correct task (calling to a token creating
+    method or creating a token itself). Then, it returns the
+    token it iterated on. But, in a case where an error occurred
+    the error is returned.
+    */
     fn _next(&mut self) -> TokenizerItem {
         self.position.next();
 
@@ -99,12 +153,22 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
     }
 
+    /*
+    The next_line method is a token creating method that creates
+    a NewLine TokenKind token and moves the tokenizer position
+    one line down.
+    */
     fn next_line(&mut self) -> TokenizerItem {
         let token = single!(self.position, TokenKind::NewLine);
         self.position.newline();
         token
     }
 
+    /*
+    The next_dash method is a token creating method that creates
+    a token based on the char that comes after the dash that was
+    seen. It returns the token it created.
+    */
     fn next_dash(&mut self) -> TokenizerItem {
         match self.chars.peek() {
             Some('>') => {
@@ -117,6 +181,11 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
     }
 
+    /*
+    The next_eqauls method is a token creating method that
+    creates a token based on the char that comes after the
+    equals char that was seen. It returns the token it created.
+    */
     fn next_equals(&mut self) -> TokenizerItem {
         match self.chars.peek() {
             Some('>') => {
@@ -135,6 +204,12 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
     }
 
+    /*
+    The next_exclemation method is a token creating method that
+    creates a token based on the char that comes after the
+    exclamation mark char that was seen. It returns the token
+    it created.
+    */
     fn next_exclemation(&mut self) -> TokenizerItem {
         match self.chars.next() {
             Some('=') => {
@@ -152,6 +227,12 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
     }
 
+    /*
+    The next_greater method is a token creating method that
+    creates a token based on the char that comes after the
+    greater than char that was seen. It returns the token it
+    created.
+    */
     fn next_greater(&mut self) -> TokenizerItem {
         match self.chars.peek() {
             Some('=') => {
@@ -164,6 +245,11 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
     }
 
+    /*
+    The less_than method is a token creating method that creates
+    a token based on the char that comes after the less than
+    char that was seen. It returns the token it created.
+    */
     fn next_less_than(&mut self) -> TokenizerItem {
         match self.chars.peek() {
             Some('=') => {
@@ -176,6 +262,12 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
     }
 
+    /*
+    The next_identifier method is a token creating method that
+    creates an identifier token, meaning it consumes every
+    alphabetic/numeric/'_' char that comes after the first one
+    it encountered and create a token out of it.
+    */
     fn next_identifier(&mut self, c: char) -> TokenizerItem {
         let start = self.get_position();
         let mut identifier = String::from(c);
@@ -201,6 +293,13 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
     }
 
+    /*
+    The next_identifier method is a token creating method that
+    creates an identifier token, meaning it consumes every
+    char that came after the first `"` it seen and creates a
+    String TokenKind out of it and returns it. Also, in a case
+    where the closing `"` was not found an Error is returned.
+    */
     fn next_string(&mut self) -> TokenizerItem {
         let start = self.get_position();
         let mut string = String::new();
@@ -222,6 +321,13 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
     }
 
+    /*
+    The next_char method is a token creating method that creates
+    an identifier token, meaning it consumes a single char that
+    came after the first `'` it seen and creates a Char
+    TokenKind out of it and returns it. Also, in a case
+    where the closing `'` was not found an Error is returned.
+    */
     fn next_char(&mut self) -> TokenizerItem {
         let start = self.get_position();
         let result: char;
@@ -260,6 +366,14 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         };
     }
 
+    /*
+    The next_number method is a token creating method that
+    consumes every number or `.` to create a number and returns
+    the a token created using this number. In a case where
+    errors occur like multiple floating points or numbers that
+    are bigger or smaller than a i32 or f32 a corresponding
+    Error is returned.
+    */
     fn next_number(&mut self, c: char) -> TokenizerItem {
         let start = self.get_position();
         let mut number = String::from(c);
@@ -311,9 +425,18 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
     }
 }
 
+// This impl block is the implementation of an Iterator for the Tokenizer struct.
 impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
+    // The Item the Iterator uses
     type Item = Result<Token, Error>;
 
+    /*
+    The next method is the method required by the Iterator trait
+    to be created for a struct to implement the Iterator trait.
+
+    The method returns the overhead item and tokenizes the next
+    item to store it in the overhead.
+    */
     fn next(&mut self) -> Option<Result<Token, Error>> {
         let current = self.overhead.take();
         self.overhead = self._next();
