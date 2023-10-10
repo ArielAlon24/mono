@@ -14,9 +14,15 @@ enum Mode {
 }
 
 fn clear_screen() {
-    print!("\x1B[2J\x1B[1;1H");
+    if cfg!(windows) {
+        std::process::Command::new("cmd")
+            .args(&["/C", "cls"])
+            .status()
+            .expect("Failed to clear the screen.");
+    } else {
+        print!("\x1B[2J\x1B[1;1H");
+    }
 }
-
 fn run(mode: &Mode, code: &str) {
     match mode {
         Mode::Tokenizer => mono::tokenizer(code),
