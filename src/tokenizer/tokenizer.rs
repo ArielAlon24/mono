@@ -1,10 +1,9 @@
-use crate::models::error::{Error, InvalidSyntax};
+use crate::models::error::{Error, Syntax};
 use crate::models::position::Position;
 use crate::tokenizer::token::{Token, TokenKind};
 
 use core::iter::Peekable;
 
-// crating a token with `None` end position
 #[macro_export]
 macro_rules! single {
     ($Position:expr, $TokenKind:expr) => {
@@ -12,7 +11,6 @@ macro_rules! single {
     };
 }
 
-// creating a token with `Some(Position)` end position.
 #[macro_export]
 macro_rules! multi {
     ($start:expr, $end:expr, $TokenKind:expr) => {
@@ -20,7 +18,6 @@ macro_rules! multi {
     };
 }
 
-// creating a token with `None` or `Some(Position)` end position.
 #[macro_export]
 macro_rules! raw {
     ($start:expr, $end:expr, $TokenKind:expr) => {
@@ -31,7 +28,7 @@ macro_rules! raw {
 #[macro_export]
 macro_rules! syntax_error {
     ($ErrorKind:expr) => {
-        Some(Err(Error::invalid_syntax($ErrorKind)))
+        Some(Err(Error::syntax($ErrorKind)))
     };
 }
 
@@ -89,7 +86,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 '\'' => self.next_char(),
                 c if c.is_ascii_alphabetic() || c == '_' => self.next_identifier(c),
                 c if c.is_numeric() => self.next_number(c),
-                c => syntax_error!(InvalidSyntax::UnrecognizedChar {
+                c => syntax_error!(Syntax::UnrecognizedChar {
                     position: self.position.clone(),
                     c
                 }),
@@ -144,7 +141,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             }
             _ => {
                 self.position.next();
-                syntax_error!(InvalidSyntax::UnexpectedChar {
+                syntax_error!(Syntax::UnexpectedChar {
                     position: self.get_position(),
                     c: '!'
                 })
@@ -217,7 +214,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(_) => unreachable!(),
             None => {
                 self.position.next();
-                syntax_error!(InvalidSyntax::UnclosedStringDelimeter { start })
+                syntax_error!(Syntax::UnclosedStringDelimeter { start })
             }
         }
     }
@@ -232,7 +229,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 self.position.next();
             }
             None => {
-                return syntax_error!(InvalidSyntax::UnexpectedChar {
+                return syntax_error!(Syntax::UnexpectedChar {
                     position: self.get_position(),
                     c: '\''
                 })
@@ -246,13 +243,13 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             }
             Some(c) => {
                 self.position.next();
-                syntax_error!(InvalidSyntax::UnclosedCharDelimeter {
+                syntax_error!(Syntax::UnclosedCharDelimeter {
                     start,
                     end: self.get_position(),
                     found: Some(c),
                 })
             }
-            None => syntax_error!(InvalidSyntax::UnclosedCharDelimeter {
+            None => syntax_error!(Syntax::UnclosedCharDelimeter {
                 start,
                 end: self.get_position(),
                 found: None,
@@ -274,7 +271,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 Some('.') => {
                     self.position.next();
                     if is_float {
-                        return syntax_error!(InvalidSyntax::MultipleFloatingPoints {
+                        return syntax_error!(Syntax::MultipleFloatingPoints {
                             start,
                             end: self.get_position(),
                         });
@@ -295,7 +292,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         if is_float {
             return match number.parse::<f32>() {
                 Ok(float) => raw!(start, end, TokenKind::Float(float)),
-                _ => syntax_error!(InvalidSyntax::InvalidFloatSize {
+                _ => syntax_error!(Syntax::InvalidFloatSize {
                     start: start,
                     end: end.unwrap(),
                 }),
@@ -303,7 +300,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
         match number.parse::<i32>() {
             Ok(int) => raw!(start, end, TokenKind::Integer(int)),
-            _ => syntax_error!(InvalidSyntax::InvalidIntegerSize {
+            _ => syntax_error!(Syntax::InvalidIntegerSize {
                 start: start,
                 end: end.unwrap(),
             }),

@@ -1,5 +1,5 @@
 use crate::models::error::Error;
-use crate::models::error::InvalidSyntax;
+use crate::models::error::Syntax;
 use crate::parser::node::Node;
 use crate::tokenizer::token::{Token, TokenKind};
 use crate::Tokenizer;
@@ -14,21 +14,17 @@ macro_rules! atom {
 
 macro_rules! unexpected_error {
     ($token:expr) => {
-        Err(Error::invalid_syntax(InvalidSyntax::UnexpectedToken {
-            token: $token,
-        }))
+        Err(Error::syntax(Syntax::UnexpectedToken { token: $token }))
     };
 }
 
 macro_rules! unclosed_error {
     ($start:expr, $end:expr, $delimeter:expr) => {
-        Err(Error::invalid_syntax(
-            InvalidSyntax::UnclosedTokenDelimeter {
-                start: $start,
-                found: $end,
-                delimiter: $delimeter,
-            },
-        ))
+        Err(Error::syntax(Syntax::UnclosedTokenDelimeter {
+            start: $start,
+            found: $end,
+            delimiter: $delimeter,
+        }))
     };
 }
 
@@ -49,7 +45,7 @@ impl<'a> Parser<'a> {
         let expr = self.parse_bool_expr()?;
         match self.tokenizer.peek() {
             None => Ok(expr),
-            _ => Err(Error::invalid_syntax(InvalidSyntax::MultipleExpressions {
+            _ => Err(Error::syntax(Syntax::MultipleExpressions {
                 position: self.tokenizer.get_position(),
             })),
         }

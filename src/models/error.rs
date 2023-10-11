@@ -5,23 +5,12 @@ use std::fmt;
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
-    InvalidSyntax(InvalidSyntax),
+    Syntax(Syntax),
     Runtime(Runtime),
 }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::InvalidSyntax(invalid_syntax) => {
-                write!(f, "InvalidSyntax: {}", invalid_syntax)
-            }
-            Self::Runtime(runtime) => write!(f, "Runtime: {}", runtime),
-        }
-    }
-}
-
 #[derive(Debug, PartialEq)]
-pub enum InvalidSyntax {
+pub enum Syntax {
     InvalidIntegerSize {
         start: Position,
         end: Position,
@@ -63,7 +52,7 @@ pub enum InvalidSyntax {
     },
 }
 
-impl fmt::Display for InvalidSyntax {
+impl fmt::Display for Syntax {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidIntegerSize {
@@ -168,11 +157,24 @@ impl fmt::Display for Runtime {
 }
 
 impl Error {
-    pub fn invalid_syntax(kind: InvalidSyntax) -> Self {
-        Error::InvalidSyntax(kind)
+    pub fn syntax(kind: Syntax) -> Self {
+        Error::Syntax(kind)
     }
 
     pub fn runtime(kind: Runtime) -> Self {
         Error::Runtime(kind)
+    }
+
+    pub fn to_kind(&self) -> &str {
+        match self {
+            Self::Syntax(_) => "SyntaxError",
+            Self::Runtime(_) => "RuntimeError",
+        }
+    }
+    pub fn to_message(&self) -> String {
+        match self {
+            Self::Syntax(syntax) => format!("{}", syntax),
+            Self::Runtime(runtime) => format!("{}", runtime),
+        }
     }
 }

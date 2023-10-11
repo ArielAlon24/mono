@@ -1,6 +1,7 @@
 <Atom>          ::= LeftParen <Expr> RightParen
                 | Integer
                 | Float
+                | Identifier
 
 <Power>         ::= <Atom>
                 | <Atom> [Pow <Factor>] *
@@ -34,5 +35,10 @@
 
 <BoolExpr>      ::= <BoolTerm>
                 | <BoolTerm> [Or <BoolTerm>] *
+
+<Assignment>    ::= Let Identifier Assignment <Expr>
+
+<Statement>     ::= <Assignment>
+                | <BoolExpr>
 
 

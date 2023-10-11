@@ -89,6 +89,11 @@ fn file(path: &str, mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn main() {
+    #[cfg(target_os = "windows")]
+    {
+        use colored::control::set_virtual_terminal;
+        set_virtual_terminal(true).expect("Failed to initialize virtual terminal!");
+    }
     let result = match env::args().collect::<Vec<String>>().as_slice() {
         [_] => console(Mode::default()),
         [_, flag] if flag == "-t" => console(Mode::Tokenizer),

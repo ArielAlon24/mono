@@ -11,6 +11,7 @@ pub enum TokenKind {
     Not,
     And,
     Or,
+    Let,
 
     // Builtin types
     Character(char),
