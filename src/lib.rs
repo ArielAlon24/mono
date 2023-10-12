@@ -4,6 +4,8 @@ pub mod parser;
 pub mod tokenizer;
 
 use crate::evaluator::evaluator::Evaluator;
+use crate::evaluator::value::Value;
+
 use crate::parser::parser::Parser;
 use crate::tokenizer::tokenizer::Tokenizer;
 use colored::*;
@@ -45,21 +47,36 @@ pub fn tokenizer(code: &str) {
 
 pub fn parser(code: &str) {
     let tokenizer = Tokenizer::new(code.chars());
-    let mut parser = Parser::new(tokenizer);
-    match parser.parse() {
-        Ok(tree) => report!(purple, "Ok", tree.to_string()),
-        Err(error) => ereport!(red, "Error", error),
+    let parser = Parser::new(tokenizer);
+    for statement in parser {
+        match statement {
+            Err(error) => {
+                ereport!(red, "Evaluator Error", error);
+                return;
+            }
+            Ok(ast) => report!(green, "Ok", format!("{:?}", ast)),
+        }
     }
 }
 
-pub fn evaluator(code: &str) {
+pub fn evaluator(code: &str, evaluator: &mut Evaluator) {
     let tokenizer = Tokenizer::new(code.chars());
-    let mut parser = Parser::new(tokenizer);
-    match parser.parse() {
-        Err(error) => ereport!(red, "Parsing Error", error),
-        Ok(ast) => match Evaluator::evaluate(ast) {
-            Err(error) => ereport!(red, "Evaluator Error", error),
-            Ok(value) => report!(green, "Ok", format!("{:?}", value)),
-        },
+    let parser = Parser::new(tokenizer);
+
+    for statement in parser {
+        match statement {
+            Err(error) => {
+                ereport!(red, "Parser Error", error);
+                return;
+            }
+            Ok(ast) => match evaluator.evaluate(ast) {
+                Err(error) => {
+                    ereport!(red, "Evaluator Error", error);
+                    return;
+                }
+                Ok(Value::None) => {}
+                Ok(value) => report!(green, "Ok", format!("{:?}", value)),
+            },
+        }
     }
 }

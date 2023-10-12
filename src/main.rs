@@ -1,3 +1,4 @@
+use crate::mono::evaluator::evaluator::Evaluator;
 use mono;
 use std::env;
 use std::fs::File;
@@ -23,11 +24,12 @@ fn clear_screen() {
         print!("\x1B[2J\x1B[1;1H");
     }
 }
-fn run(mode: &Mode, code: &str) {
-    match mode {
-        Mode::Tokenizer => mono::tokenizer(code),
-        Mode::Parser => mono::parser(code),
-        Mode::Evaluator => mono::evaluator(code),
+fn run(mode: &Mode, code: &str, evalutaor: Option<&mut Evaluator>) {
+    match (mode, evalutaor) {
+        (Mode::Tokenizer, _) => mono::tokenizer(code),
+        (Mode::Parser, _) => mono::parser(code),
+        (Mode::Evaluator, None) => mono::evaluator(code, &mut Evaluator::new()),
+        (Mode::Evaluator, Some(e)) => mono::evaluator(code, e),
     }
 }
 
@@ -52,6 +54,7 @@ fn logo() {
 fn console(mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
     clear_screen();
     logo();
+    let mut evalutaor = Evaluator::new();
     let mut buffer = String::new();
     let stdin = io::stdin();
     let mut handle = stdin.lock();
@@ -65,7 +68,7 @@ fn console(mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
         match buffer.trim() {
             "quit" => return Ok(()),
             "clear" => clear_screen(),
-            code => run(&mode, code),
+            code => run(&mode, code, Some(&mut evalutaor)),
         }
     }
 }
@@ -78,7 +81,7 @@ fn file(path: &str, mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
 
     if let Some(ext) = path.extension() {
         if ext == "mono" {
-            run(&mode, &contents);
+            run(&mode, &contents, None);
             Ok(())
         } else {
             Err(Box::from("File does not have the desired suffix."))

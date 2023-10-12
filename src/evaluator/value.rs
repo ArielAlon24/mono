@@ -12,11 +12,12 @@ macro_rules! invalid_operation {
     };
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Value {
     Integer(i32),
     Float(f32),
     Boolean(bool),
+    None,
 }
 
 type Operation = Result<Value, Error>;
@@ -164,6 +165,7 @@ impl Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a == b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a == b)),
+            (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a == b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }

@@ -36,9 +36,12 @@
 <BoolExpr>      ::= <BoolTerm>
                 | <BoolTerm> [Or <BoolTerm>] *
 
-<Assignment>    ::= Let Identifier Assignment <Expr>
+<Assignment>    ::= Identifier Assignment <Expr>
 
-<Statement>     ::= <Assignment>
+<Statement>     ::= Let <Assignment>
                 | <BoolExpr>
+
+<Program>       ::= <Statement> 
+                | <Statement> [NewLine <Statement>] * 
 
 

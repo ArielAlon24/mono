@@ -6,6 +6,8 @@ pub enum Node {
     Atom(Token),
     BinaryOp(Box<Node>, Token, Box<Node>),
     UnaryOp(Token, Box<Node>),
+    Assignment(Token, Box<Node>),
+    Access(Token),
 }
 
 impl Node {
@@ -35,6 +37,11 @@ impl Node {
                 write!(f, "{}UnaryOp {}\n", current_prefix, token)?;
                 node.format_tree(f, &child_prefix, false, true)
             }
+            Node::Assignment(identifier, expr) => {
+                write!(f, "{}Assignment {}\n", current_prefix, identifier)?;
+                expr.format_tree(f, &child_prefix, false, true)
+            }
+            Node::Access(identifier) => write!(f, "{}Access {}\n", current_prefix, identifier),
         }
     }
 }

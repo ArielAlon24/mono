@@ -60,6 +60,7 @@ impl TokenKind {
             "not" => Some(Self::Not),
             "and" => Some(Self::And),
             "or" => Some(Self::Or),
+            "let" => Some(Self::Let),
             _ => None,
         }
     }

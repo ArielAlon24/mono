@@ -133,6 +133,9 @@ pub enum Runtime {
         right: Option<Value>,
         left: Value,
     },
+    UnknownIdentifier {
+        identifier: Token,
+    },
 }
 
 impl fmt::Display for Runtime {
@@ -151,6 +154,9 @@ impl fmt::Display for Runtime {
                 } else {
                     write!(f, "Invalid unary operation detected. Operator `{:?}` was used with value `{:?}`.", operator.kind, left)
                 }
+            }
+            Self::UnknownIdentifier { identifier } => {
+                write!(f, "Unknown identifier `{}` detected.", identifier)
             }
         }
     }
