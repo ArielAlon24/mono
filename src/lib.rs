@@ -47,36 +47,32 @@ pub fn tokenizer(code: &str) {
 
 pub fn parser(code: &str) {
     let tokenizer = Tokenizer::new(code.chars());
-    let parser = Parser::new(tokenizer);
-    for statement in parser {
-        match statement {
-            Err(error) => {
-                ereport!(red, "Evaluator Error", error);
-                return;
-            }
-            Ok(ast) => report!(green, "Ok", format!("{:?}", ast)),
+    let mut parser = Parser::new(tokenizer);
+    match parser.parse() {
+        Err(error) => {
+            ereport!(red, "Evaluator Error", error);
+            return;
         }
+        Ok(ast) => report!(green, "Ok", format!("{}", ast)),
     }
 }
 
 pub fn evaluator(code: &str, evaluator: &mut Evaluator) {
     let tokenizer = Tokenizer::new(code.chars());
-    let parser = Parser::new(tokenizer);
+    let mut parser = Parser::new(tokenizer);
 
-    for statement in parser {
-        match statement {
+    match parser.parse() {
+        Err(error) => {
+            ereport!(red, "Parser Error", error);
+            return;
+        }
+        Ok(ast) => match evaluator.evaluate(ast) {
             Err(error) => {
-                ereport!(red, "Parser Error", error);
+                ereport!(red, "Evaluator Error", error);
                 return;
             }
-            Ok(ast) => match evaluator.evaluate(ast) {
-                Err(error) => {
-                    ereport!(red, "Evaluator Error", error);
-                    return;
-                }
-                Ok(Value::None) => {}
-                Ok(value) => report!(green, "Ok", format!("{:?}", value)),
-            },
-        }
+            Ok(Value::None) => {}
+            Ok(value) => report!(green, "Ok", format!("{:?}", value)),
+        },
     }
 }

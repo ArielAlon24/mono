@@ -8,6 +8,7 @@ As Mono is still in its early stages, not all planned features have been impleme
 
 - [x] Evaluating arithmetic expressions.
 - [x] Evaluating boolean expressions.
+- [x] Variables.
 
 ## Cli
 

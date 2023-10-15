@@ -8,6 +8,13 @@ pub enum Node {
     UnaryOp(Token, Box<Node>),
     Assignment(Token, Box<Node>),
     Access(Token),
+    If {
+        condition: Box<Node>,
+        block: Box<Node>,
+    },
+    Program {
+        statements: Vec<Box<Node>>,
+    },
 }
 
 impl Node {
@@ -42,6 +49,18 @@ impl Node {
                 expr.format_tree(f, &child_prefix, false, true)
             }
             Node::Access(identifier) => write!(f, "{}Access {}\n", current_prefix, identifier),
+            Node::If { condition, block } => {
+                write!(f, "{}If\n", current_prefix)?;
+                condition.format_tree(f, &child_prefix, false, false)?;
+                block.format_tree(f, &child_prefix, false, true)
+            }
+            Node::Program { statements } => {
+                write!(f, "{}Program\n", current_prefix)?;
+                for statement in statements {
+                    statement.format_tree(f, &child_prefix, false, true)?;
+                }
+                Ok(())
+            }
         }
     }
 }

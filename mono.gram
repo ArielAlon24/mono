@@ -36,10 +36,15 @@
 <BoolExpr>      ::= <BoolTerm>
                 | <BoolTerm> [Or <BoolTerm>] *
 
+<Block>         ::= LeftCurly <Program> RightCurly
+
 <Assignment>    ::= Identifier Assignment <Expr>
+
+<If>            ::= If <BoolExpr> <Block> 
 
 <Statement>     ::= Let <Assignment>
                 | <BoolExpr>
+                | <If>
 
 <Program>       ::= <Statement> 
                 | <Statement> [NewLine <Statement>] * 

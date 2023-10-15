@@ -46,6 +46,19 @@ impl Evaluator {
                 }
                 unreachable!()
             }
+            Node::Program { statements } => {
+                let mut value = Value::None;
+                for statement in statements {
+                    value = self.evaluate(statement)?;
+                }
+                Ok(value)
+            }
+            Node::If { condition, block } => {
+                if self.evaluate(condition)? == Value::Boolean(true) {
+                    return Ok(self.evaluate(block)?);
+                }
+                Ok(Value::None)
+            }
         }
     }
 }

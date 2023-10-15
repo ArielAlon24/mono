@@ -41,6 +41,10 @@ impl<'a> Parser<'a> {
         };
     }
 
+    pub fn parse(&mut self) -> ParserItem {
+        self.parse_program()
+    }
+
     fn parse_binary_op(
         &mut self,
         operators: &[TokenKind],
@@ -94,7 +98,9 @@ impl<'a> Parser<'a> {
             TokenKind::Integer(_) | TokenKind::Float(_) => atom!(token),
             TokenKind::Boolean(_) => atom!(token),
             TokenKind::Identifier(_) => Ok(Box::new(Node::Access(token))),
-            _ => unexpected_error!(Some(token)),
+            _ => {
+                unexpected_error!(Some(token))
+            }
         }
     }
 
@@ -158,10 +164,28 @@ impl<'a> Parser<'a> {
         )
     }
 
-    fn parse_assignment(&mut self) -> ParserItem {
+    fn parse_block(&mut self) -> ParserItem {
         if let None = self.tokenizer.peek() {
             return unexpected_error!(None);
         }
+        let token = self.tokenizer.next().unwrap()?;
+        if token.kind != TokenKind::LeftCurly {
+            return unexpected_error!(Some(token));
+        }
+
+        let program = self.parse_program()?;
+
+        if let Some(Ok(_)) = self.tokenizer.peek() {
+            let token = self.tokenizer.next().unwrap()?;
+            if token.kind != TokenKind::RightCurly {
+                return unexpected_error!(Some(token));
+            }
+        }
+
+        Ok(program)
+    }
+
+    fn parse_assignment(&mut self) -> ParserItem {
         let token = self.tokenizer.next().unwrap()?;
         if let TokenKind::Identifier(_) = token.kind {
             if let None = self.tokenizer.peek() {
@@ -177,33 +201,47 @@ impl<'a> Parser<'a> {
         unexpected_error!(Some(token))
     }
 
+    fn parse_if(&mut self) -> ParserItem {
+        self.tokenizer.next(); // Going over the If token.
+        Ok(Box::new(Node::If {
+            condition: self.parse_bool_expr()?,
+            block: self.parse_block()?,
+        }))
+    }
+
     fn parse_statement(&mut self) -> ParserItem {
         match self.tokenizer.peek() {
             None => unexpected_error!(None),
-            Some(Ok(token)) if token.kind == TokenKind::Let => {
-                self.tokenizer.next();
-                self.parse_assignment()
-            }
-            Some(Ok(_)) => self.parse_bool_expr(),
+            Some(Ok(token)) => match token.kind {
+                TokenKind::Let => {
+                    self.tokenizer.next();
+                    self.parse_assignment()
+                }
+                TokenKind::If => self.parse_if(),
+                _ => self.parse_bool_expr(),
+            },
             Some(Err(_)) => {
                 let error = self.tokenizer.next().expect("unreachable!").unwrap_err();
                 return Err(error);
             }
         }
     }
-}
 
-impl<'a> Iterator for Parser<'a> {
-    type Item = Result<Box<Node>, Error>;
+    fn parse_program(&mut self) -> ParserItem {
+        let mut statements: Vec<Box<Node>> = Vec::new();
 
-    fn next(&mut self) -> Option<Result<Box<Node>, Error>> {
-        match self.tokenizer.peek() {
-            None => None,
-            Some(Ok(token)) if token.kind == TokenKind::NewLine => {
-                self.tokenizer.next();
-                self.next()
+        while let Some(result) = self.tokenizer.peek() {
+            if let Ok(token) = result {
+                if token.kind == TokenKind::RightCurly {
+                    break;
+                }
+                if token.kind == TokenKind::NewLine {
+                    self.tokenizer.next();
+                    continue;
+                }
             }
-            _ => Some(self.parse_statement()),
+            statements.push(self.parse_statement()?);
         }
+        Ok(Box::new(Node::Program { statements }))
     }
 }

@@ -12,6 +12,7 @@ pub enum TokenKind {
     And,
     Or,
     Let,
+    If,
 
     // Builtin types
     Character(char),
@@ -61,6 +62,7 @@ impl TokenKind {
             "and" => Some(Self::And),
             "or" => Some(Self::Or),
             "let" => Some(Self::Let),
+            "if" => Some(Self::If),
             _ => None,
         }
     }
