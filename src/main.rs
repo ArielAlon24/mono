@@ -35,12 +35,20 @@ fn run(mode: &Mode, code: &str, evalutaor: Option<&mut Evaluator>) {
 
 fn usage() {
     eprintln!("Usage:");
-    eprintln!("  ./mono <flag> <path>");
     eprintln!("");
-    eprintln!("  Flags:");
-    eprintln!("  -t          run the Tokenizer");
-    eprintln!("  -p          run the Parser");
-    eprintln!("  -e          run the Evaluator")
+    eprintln!("    Repl:");
+    eprintln!("        ./mono <flag>");
+    eprintln!("");
+    eprintln!("    File:");
+    eprintln!("        ./mono <flag> <path>");
+    eprintln!("");
+    eprintln!("    Code:");
+    eprintln!("        ./mono -c <flag> <code>");
+    eprintln!("");
+    eprintln!("    Flags:");
+    eprintln!("    -t          run the Tokenizer");
+    eprintln!("    -p          run the Parser");
+    eprintln!("    -e          run the Evaluator")
 }
 
 fn logo() {
@@ -104,9 +112,19 @@ fn main() {
         [_, flag] if flag == "-e" => console(Mode::Evaluator),
         [_, flag] if flag.starts_with("-") => Err(format!("Unknown flag: {}", flag).into()),
         [_, path] => file(path, Mode::default()),
+        [_, flag, code] if flag == "-c" => Ok(run(&Mode::default(), &code, None)),
         [_, flag, path] if flag == "-t" => file(path, Mode::Tokenizer),
         [_, flag, path] if flag == "-p" => file(path, Mode::Parser),
         [_, flag, path] if flag == "-e" => file(path, Mode::Evaluator),
+        [_, code_flag, mode_flag, code] if code_flag == "-c" && mode_flag == "-t" => {
+            Ok(run(&Mode::Tokenizer, &code, None))
+        }
+        [_, code_flag, mode_flag, code] if code_flag == "-c" && mode_flag == "-p" => {
+            Ok(run(&Mode::Parser, &code, None))
+        }
+        [_, code_flag, mode_flag, code] if code_flag == "-c" && mode_flag == "-e" => {
+            Ok(run(&Mode::Evaluator, &code, None))
+        }
         _ => Err("Invalid command line arguments".into()),
     };
 
