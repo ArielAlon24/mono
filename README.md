@@ -1,4 +1,4 @@
-# Mono
+g# Mono
 
 Mono is an interpreted programming language developed using Rust.
 
@@ -9,6 +9,7 @@ As Mono is still in its early stages, not all planned features have been impleme
 - [x] Evaluating arithmetic expressions.
 - [x] Evaluating boolean expressions.
 - [x] Variables.
+- [x] If statements.
 
 ## Cli
 
@@ -18,12 +19,17 @@ Mono's command-line interface (CLI) offers various capabilities, including execu
 
 To launch the REPL:
 ```Console
-> cargo run -- <flag>
+> mono <flag>
 ```
 
 To execute a file:
 ```Console
-> cargo run -- <flag> <path/to/file.mono>
+> mono <flag> <path/to/file.mono>
+```
+
+To execute code:
+```Console
+> mono -c <flag> <code>
 ```
 
 ### Flags

@@ -16,8 +16,8 @@ impl Evaluator {
         }
     }
 
-    pub fn evaluate(&mut self, statement: Box<Node>) -> Result<Value, Error> {
-        match *statement {
+    pub fn evaluate(&mut self, program: Box<Node>) -> Result<Value, Error> {
+        match *program {
             Node::Atom(token) => Ok(Value::from(token)),
             Node::BinaryOp(right, operation, left) => {
                 let right_value = self.evaluate(right)?;
@@ -53,9 +53,17 @@ impl Evaluator {
                 }
                 Ok(value)
             }
-            Node::If { condition, block } => {
+            Node::If {
+                condition,
+                block,
+                else_block,
+            } => {
                 if self.evaluate(condition)? == Value::Boolean(true) {
                     return Ok(self.evaluate(block)?);
+                }
+
+                if let Some(some_else_block) = else_block {
+                    return Ok(self.evaluate(some_else_block)?);
                 }
                 Ok(Value::None)
             }

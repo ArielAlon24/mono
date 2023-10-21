@@ -65,6 +65,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         if let Some(c) = self.chars.next() {
             match c {
                 ' ' => self._next(),
+                '#' => self.next_comment(),
                 '+' => single!(self.position, TokenKind::Add),
                 '*' => single!(self.position, TokenKind::Mul),
                 '/' => single!(self.position, TokenKind::Div),
@@ -94,6 +95,15 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         } else {
             None
         }
+    }
+
+    fn next_comment(&mut self) -> TokenizerItem {
+        while let Some(c) = self.chars.next() {
+            if c == '\n' {
+                return self.next_line();
+            }
+        }
+        None
     }
 
     fn next_line(&mut self) -> TokenizerItem {

@@ -11,6 +11,7 @@ pub enum Node {
     If {
         condition: Box<Node>,
         block: Box<Node>,
+        else_block: Option<Box<Node>>,
     },
     Program {
         statements: Vec<Box<Node>>,
@@ -49,15 +50,24 @@ impl Node {
                 expr.format_tree(f, &child_prefix, false, true)
             }
             Node::Access(identifier) => write!(f, "{}Access {}\n", current_prefix, identifier),
-            Node::If { condition, block } => {
+            Node::If {
+                condition,
+                block,
+                else_block,
+            } => {
                 write!(f, "{}If\n", current_prefix)?;
                 condition.format_tree(f, &child_prefix, false, false)?;
+                if let Some(some_else_block) = else_block {
+                    block.format_tree(f, &child_prefix, false, false)?;
+                    return some_else_block.format_tree(f, &child_prefix, false, true);
+                }
                 block.format_tree(f, &child_prefix, false, true)
             }
             Node::Program { statements } => {
                 write!(f, "{}Program\n", current_prefix)?;
-                for statement in statements {
-                    statement.format_tree(f, &child_prefix, false, true)?;
+                for (index, statement) in statements.iter().enumerate() {
+                    let is_last = index == statements.len() - 1;
+                    statement.format_tree(f, &child_prefix, false, is_last)?;
                 }
                 Ok(())
             }

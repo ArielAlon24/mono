@@ -40,7 +40,7 @@
 
 <Assignment>    ::= Identifier Assignment <Expr>
 
-<If>            ::= If <BoolExpr> <Block> 
+<If>            ::= If <BoolExpr> <Block> [Else <Block>]
 
 <Statement>     ::= Let <Assignment>
                 | <BoolExpr>

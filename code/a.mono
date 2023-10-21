@@ -1,7 +1,10 @@
-let a = 2
-let b = 1
+# Variable Deceleration
+let a = 0
 
-if a > 0 {
-    let c = a + b
+if ( a ==  0 ) {
+    let b = 1
 }
-c
+
+
+
+b

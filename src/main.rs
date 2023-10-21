@@ -36,7 +36,7 @@ fn run(mode: &Mode, code: &str, evalutaor: Option<&mut Evaluator>) {
 fn usage() {
     eprintln!("Usage:");
     eprintln!("");
-    eprintln!("    Repl:");
+    eprintln!("    REPL:");
     eprintln!("        ./mono <flag>");
     eprintln!("");
     eprintln!("    File:");

@@ -203,9 +203,19 @@ impl<'a> Parser<'a> {
 
     fn parse_if(&mut self) -> ParserItem {
         self.tokenizer.next(); // Going over the If token.
+        let condition = self.parse_bool_expr()?;
+        let block = self.parse_block()?;
+        let mut else_block = None;
+        if let Some(Ok(token)) = self.tokenizer.peek() {
+            if token.kind == TokenKind::Else {
+                self.tokenizer.next(); // Going over the Else token.
+                else_block = Some(self.parse_block()?);
+            }
+        }
         Ok(Box::new(Node::If {
-            condition: self.parse_bool_expr()?,
-            block: self.parse_block()?,
+            condition: condition,
+            block: block,
+            else_block: else_block,
         }))
     }
 
