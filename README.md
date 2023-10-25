@@ -1,4 +1,4 @@
-g# Mono
+# Mono
 
 Mono is an interpreted programming language developed using Rust.
 
@@ -9,7 +9,8 @@ As Mono is still in its early stages, not all planned features have been impleme
 - [x] Evaluating arithmetic expressions.
 - [x] Evaluating boolean expressions.
 - [x] Variables.
-- [x] If statements.
+- [x] If-Else statements.
+- [x] While statements.
 
 ## Cli
 
