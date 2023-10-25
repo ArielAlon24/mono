@@ -45,8 +45,10 @@ pub enum Syntax {
         c: char,
     },
     UnexpectedToken {
-        token: Option<Token>,
+        token: Token,
+        expected: Vec<TokenKind>,
     },
+    UnexpectedEOF,
     MultipleExpressions {
         position: Position,
     },
@@ -103,14 +105,19 @@ impl fmt::Display for Syntax {
             Self::UnrecognizedChar { position, c } => {
                 write!(f, "Encountered unrecognized character '{}' at position {}. Ensure your input only contains valid characters.", c, position)
             }
-            Self::UnexpectedToken { token: Some(token) } => {
+            Self::UnexpectedToken { token, expected } => {
                 write!(
                     f,
-                    "Encountered unexpected token `{:?}` at position {}.",
-                    token.kind, token.start
+                    "Encountered unexpected token `{:?}` at position {}, expected one of the following: {}.",
+                    token.kind, 
+                    token.start, 
+                    expected.iter()
+                            .map(|kind| kind.to_kind())
+                            .collect::<Vec<_>>()
+                            .join(", ")
                 )
             }
-            Self::UnexpectedToken { token: None } => {
+            Self::UnexpectedEOF => {
                 write!(
                     f,
                     "Unexpected end of input. The expression might be incomplete."

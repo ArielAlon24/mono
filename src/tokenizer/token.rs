@@ -14,6 +14,7 @@ pub enum TokenKind {
     Let,
     If,
     Else,
+    While,
 
     // Builtin types
     Character(char),
@@ -65,12 +66,25 @@ impl TokenKind {
             "let" => Some(Self::Let),
             "if" => Some(Self::If),
             "else" => Some(Self::Else),
+            "while" => Some(Self::While),
             _ => None,
+        }
+    }
+
+    pub fn to_kind(&self) -> String {
+        match self {
+            Self::Identifier(_) => String::from("Identifier"),
+            Self::Character(_) => String::from("Character"),
+            Self::String(_) => String::from("String"),
+            Self::Integer(_) => String::from("Integer"),
+            Self::Float(_) => String::from("Float"),
+            Self::Boolean(_) => String::from("Boolean"),
+            _ => format!("{:?}", self),
         }
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub start: Position,
     pub end: Option<Position>,

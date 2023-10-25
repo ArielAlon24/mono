@@ -1,10 +1,21 @@
-# Variable Deceleration
-let a = 0
+# Prime Check Program
+#
+#   The Program takes a number and returns True 
+#   if the number is a prime otherwise False.
 
-if ( a ==  0 ) {
-    let b = 1
+# Number to check
+let number = 11
+
+
+let index = 1
+let divisors = 0
+
+while (index <= number) {
+    if (number % index == 0) {
+        let divisors = divisors + 1
+    }
+    let index = index + 1
 }
 
-
-
-b
+# Result
+divisors == 2

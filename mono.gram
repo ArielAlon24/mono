@@ -40,11 +40,14 @@
 
 <Assignment>    ::= Identifier Assignment <Expr>
 
-<If>            ::= If <BoolExpr> <Block> [Else <Block>]
+<If>            ::= If <BoolExpr> <Block> [Else <Block>]>
+
+<While>         ::= While <BoolExpr> <Block>
 
 <Statement>     ::= Let <Assignment>
                 | <BoolExpr>
                 | <If>
+                | <While>
 
 <Program>       ::= <Statement> 
                 | <Statement> [NewLine <Statement>] * 
