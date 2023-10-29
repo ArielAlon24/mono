@@ -1,14 +1,15 @@
 use crate::models::error::{Error, Runtime};
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token::TokenKind;
-
+use std::fmt;
 macro_rules! invalid_operation {
     ($operator:expr, $right:expr, $left:expr) => {
-        Err(Error::runtime(Runtime::InvalidOperation {
-            operator: $operator,
+        Err(Runtime::InvalidOperation {
+            operator: $operator.clone(),
             right: $right,
             left: $left,
-        }))
+        }
+        .into())
     };
 }
 
@@ -20,10 +21,22 @@ pub enum Value {
     None,
 }
 
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Value::Integer(value) => write!(f, "{value}"),
+            Value::Float(value) => write!(f, "{value}"),
+            Value::Boolean(true) => write!(f, "True"),
+            Value::Boolean(false) => write!(f, "False"),
+            Value::None => write!(f, ""),
+        }
+    }
+}
+
 type Operation = Result<Value, Error>;
 
 impl Value {
-    pub fn from(token: Token) -> Self {
+    pub fn from(token: &Token) -> Self {
         match token.kind {
             TokenKind::Integer(value) => Self::Integer(value),
             TokenKind::Float(value) => Self::Float(value),
@@ -32,7 +45,7 @@ impl Value {
         }
     }
 
-    pub fn binary_operation(self, other: Self, operator: Token) -> Operation {
+    pub fn binary_operation(self, other: Self, operator: &Token) -> Operation {
         match operator.kind {
             TokenKind::Add => self.add(other, operator),
             TokenKind::Sub => self.sub(other, operator),
@@ -52,7 +65,7 @@ impl Value {
         }
     }
 
-    pub fn unary_operation(self, operator: Token) -> Operation {
+    pub fn unary_operation(self, operator: &Token) -> Operation {
         match operator.kind {
             TokenKind::Add => self.uadd(operator),
             TokenKind::Sub => self.usub(operator),
@@ -61,7 +74,7 @@ impl Value {
         }
     }
 
-    fn add(self, other: Self, operator: Token) -> Operation {
+    fn add(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a + b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a + b)),
@@ -69,7 +82,7 @@ impl Value {
         }
     }
 
-    fn uadd(self, operator: Token) -> Operation {
+    fn uadd(self, operator: &Token) -> Operation {
         match self {
             Value::Integer(a) => Ok(Value::Integer(a)),
             Value::Float(a) => Ok(Value::Float(a)),
@@ -77,7 +90,7 @@ impl Value {
         }
     }
 
-    fn sub(self, other: Self, operator: Token) -> Operation {
+    fn sub(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a - b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a - b)),
@@ -85,7 +98,7 @@ impl Value {
         }
     }
 
-    fn usub(self, operator: Token) -> Operation {
+    fn usub(self, operator: &Token) -> Operation {
         match self {
             Value::Integer(a) => Ok(Value::Integer(-a)),
             Value::Float(a) => Ok(Value::Float(-a)),
@@ -93,7 +106,7 @@ impl Value {
         }
     }
 
-    fn mul(self, other: Self, operator: Token) -> Operation {
+    fn mul(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a * b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a * b)),
@@ -101,25 +114,23 @@ impl Value {
         }
     }
 
-    fn div(self, other: Self, operator: Token) -> Operation {
+    fn div(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
-            (Value::Integer(_), Value::Integer(0)) => {
-                Err(Error::runtime(Runtime::DivisionByZero {
-                    division: operator,
-                }))
+            (Value::Integer(_), Value::Integer(0)) => Err(Runtime::DivisionByZero {
+                division: operator.clone(),
             }
+            .into()),
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a / b)),
-            (Value::Float(_), Value::Float(b)) if b == 0.0 => {
-                Err(Error::runtime(Runtime::DivisionByZero {
-                    division: operator,
-                }))
+            (Value::Float(_), Value::Float(b)) if b == 0.0 => Err(Runtime::DivisionByZero {
+                division: operator.clone(),
             }
+            .into()),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a / b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
 
-    fn modulo(self, other: Self, operator: Token) -> Operation {
+    fn modulo(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a % b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a % b)),
@@ -127,7 +138,7 @@ impl Value {
         }
     }
 
-    fn pow(self, other: Self, operator: Token) -> Operation {
+    fn pow(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) if b >= 0 => {
                 Ok(Value::Integer((a as f64).powi(b as i32) as i32))
@@ -140,28 +151,28 @@ impl Value {
         }
     }
 
-    fn not(self, operator: Token) -> Operation {
+    fn not(self, operator: &Token) -> Operation {
         match self {
             Value::Boolean(a) => Ok(Value::Boolean(!a)),
             left => invalid_operation!(operator, None, left),
         }
     }
 
-    fn and(self, other: Self, operator: Token) -> Operation {
+    fn and(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a && b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
 
-    fn or(self, other: Self, operator: Token) -> Operation {
+    fn or(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a || b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
 
-    fn equals(self, other: Self, operator: Token) -> Operation {
+    fn equals(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a == b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a == b)),
@@ -170,7 +181,7 @@ impl Value {
         }
     }
 
-    fn not_equals(self, other: Self, operator: Token) -> Operation {
+    fn not_equals(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a != b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a != b)),
@@ -179,7 +190,7 @@ impl Value {
         }
     }
 
-    fn greater(self, other: Self, operator: Token) -> Operation {
+    fn greater(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a > b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a > b)),
@@ -187,7 +198,7 @@ impl Value {
         }
     }
 
-    fn greater_eq(self, other: Self, operator: Token) -> Operation {
+    fn greater_eq(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a >= b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a >= b)),
@@ -195,7 +206,7 @@ impl Value {
         }
     }
 
-    fn less_than(self, other: Self, operator: Token) -> Operation {
+    fn less_than(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a < b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a < b)),
@@ -203,7 +214,7 @@ impl Value {
         }
     }
 
-    fn less_than_eq(self, other: Self, operator: Token) -> Operation {
+    fn less_than_eq(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a <= b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a <= b)),

@@ -1,7 +1,8 @@
 use crate::models::position::Position;
 use std::fmt;
+use std::mem::discriminant;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub enum TokenKind {
     Identifier(String),
@@ -15,6 +16,7 @@ pub enum TokenKind {
     If,
     Else,
     While,
+    Def,
 
     // Builtin types
     Character(char),
@@ -51,7 +53,14 @@ pub enum TokenKind {
     DoubleArrow,
 
     // Other
+    Comma,
     NewLine,
+}
+
+impl PartialEq for TokenKind {
+    fn eq(&self, other: &Self) -> bool {
+        discriminant(self) == discriminant(other)
+    }
 }
 
 impl TokenKind {
@@ -67,6 +76,7 @@ impl TokenKind {
             "if" => Some(Self::If),
             "else" => Some(Self::Else),
             "while" => Some(Self::While),
+            "def" => Some(Self::Def),
             _ => None,
         }
     }

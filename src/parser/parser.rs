@@ -14,20 +14,22 @@ macro_rules! atom {
 
 macro_rules! unexpected_token {
     ($token:expr, $expected:expr) => {
-        Err(Error::syntax(Syntax::UnexpectedToken {
+        Err(Syntax::UnexpectedToken {
             token: $token,
             expected: $expected,
-        }))
+        }
+        .into())
     };
 }
 
 macro_rules! unclosed_token {
     ($start:expr, $end:expr, $delimeter:expr) => {
-        Err(Error::syntax(Syntax::UnclosedTokenDelimeter {
+        Err(Syntax::UnclosedTokenDelimeter {
             start: $start,
             found: $end,
             delimiter: $delimeter,
-        }))
+        }
+        .into())
     };
 }
 
@@ -39,13 +41,19 @@ pub struct Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn new(tokenizer: Tokenizer<Peekable<Chars<'a>>>) -> Self {
-        return Self {
-            tokenizer: tokenizer,
-        };
+        Self { tokenizer }
     }
 
     pub fn parse(&mut self) -> ParserItem {
         self.parse_program()
+    }
+
+    fn expect_token(&mut self, expected: TokenKind) -> Result<Token, Error> {
+        match self.tokenizer.next() {
+            Some(Ok(token)) if token.kind == expected => Ok(token),
+            Some(Ok(token)) => unexpected_token!(token, vec![expected]),
+            _ => Err(Syntax::UnexpectedEOF.into()),
+        }
     }
 
     fn parse_binary_op(
@@ -85,7 +93,7 @@ impl<'a> Parser<'a> {
 
     fn parse_atom(&mut self) -> ParserItem {
         if let None = self.tokenizer.peek() {
-            return Err(Error::syntax(Syntax::UnexpectedEOF));
+            return Err(Syntax::UnexpectedEOF.into());
         }
 
         let token = self.tokenizer.next().unwrap()?;
@@ -98,8 +106,7 @@ impl<'a> Parser<'a> {
                     _ => unclosed_token!(token, None, TokenKind::RightParen),
                 }
             }
-            TokenKind::Integer(_) | TokenKind::Float(_) => atom!(token),
-            TokenKind::Boolean(_) => atom!(token),
+            TokenKind::Integer(_) | TokenKind::Float(_) | TokenKind::Boolean(_) => atom!(token),
             TokenKind::Identifier(_) => Ok(Box::new(Node::Access { identifier: token })),
             _ => {
                 unexpected_token!(
@@ -178,40 +185,21 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_block(&mut self) -> ParserItem {
-        if let None = self.tokenizer.peek() {
-            return Err(Error::syntax(Syntax::UnexpectedEOF));
-        }
-        let start = self.tokenizer.next().unwrap()?;
-        if start.kind != TokenKind::LeftCurly {
-            return unexpected_token!(start, vec![TokenKind::LeftCurly]);
-        }
-
+        self.expect_token(TokenKind::LeftCurly)?;
         let program = self.parse_program()?;
-
-        if let None = self.tokenizer.peek() {
-            return unclosed_token!(start, None, TokenKind::RightCurly);
-        }
-        let end = self.tokenizer.next().unwrap()?;
-        match end.kind {
-            TokenKind::RightCurly => Ok(program),
-            _ => unclosed_token!(start, Some(end), TokenKind::RightCurly),
-        }
+        self.expect_token(TokenKind::RightCurly)?;
+        Ok(program)
     }
 
-    fn parse_assignment(&mut self) -> ParserItem {
-        let identifier = self.tokenizer.next().unwrap()?;
-        if let TokenKind::Identifier(_) = identifier.kind {
-            if let None = self.tokenizer.peek() {
-                return Err(Error::syntax(Syntax::UnexpectedEOF));
-            }
-            let equals = self.tokenizer.next().unwrap()?;
-            if equals.kind != TokenKind::Assignment {
-                return unexpected_token!(equals, vec![TokenKind::Assignment]);
-            }
-            let value = self.parse_bool_expr()?;
-            return Ok(Box::new(Node::Assignment { identifier, value }));
-        }
-        unexpected_token!(identifier, vec![TokenKind::Identifier("".to_string())])
+    fn parse_assignment(&mut self, is_declaration: bool) -> ParserItem {
+        let identifier = self.expect_token(TokenKind::Identifier(String::new()))?;
+        self.expect_token(TokenKind::Assignment)?;
+        let value = self.parse_bool_expr()?;
+        Ok(Box::new(Node::Assignment {
+            identifier,
+            value,
+            is_declaration,
+        }))
     }
 
     fn parse_if(&mut self) -> ParserItem {
@@ -242,20 +230,18 @@ impl<'a> Parser<'a> {
 
     fn parse_statement(&mut self) -> ParserItem {
         match self.tokenizer.peek() {
-            None => Err(Error::syntax(Syntax::UnexpectedEOF)),
+            None => Err(Syntax::UnexpectedEOF.into()),
+            Some(Err(_)) => Err(self.tokenizer.next().expect("unreachable").unwrap_err()),
             Some(Ok(token)) => match token.kind {
                 TokenKind::Let => {
                     self.tokenizer.next();
-                    self.parse_assignment()
+                    self.parse_assignment(true)
                 }
                 TokenKind::If => self.parse_if(),
                 TokenKind::While => self.parse_while(),
+                TokenKind::Identifier(_) => self.parse_assignment(false),
                 _ => self.parse_bool_expr(),
             },
-            Some(Err(_)) => {
-                let error = self.tokenizer.next().expect("unreachable!").unwrap_err();
-                return Err(error);
-            }
         }
     }
 
@@ -274,6 +260,7 @@ impl<'a> Parser<'a> {
             }
             statements.push(self.parse_statement()?);
         }
+
         Ok(Box::new(Node::Program { statements }))
     }
 }

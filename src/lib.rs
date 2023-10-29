@@ -64,15 +64,13 @@ pub fn evaluator(code: &str, evaluator: &mut Evaluator) {
     match parser.parse() {
         Err(error) => {
             ereport!(red, "Parser Error", error);
-            return;
         }
-        Ok(ast) => match evaluator.evaluate(ast) {
+        Ok(mut ast) => match evaluator.evaluate(&mut ast) {
             Err(error) => {
                 ereport!(red, "Evaluator Error", error);
-                return;
             }
             Ok(Value::None) => {}
-            Ok(value) => report!(green, "Ok", format!("{:?}", value)),
+            Ok(value) => println!("{}\n", format!("{}", value).green()),
         },
     }
 }

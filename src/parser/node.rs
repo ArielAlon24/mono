@@ -18,6 +18,7 @@ pub enum Node {
     Assignment {
         identifier: Token,
         value: Box<Node>,
+        is_declaration: bool,
     },
     Access {
         identifier: Token,
@@ -70,8 +71,16 @@ impl Node {
                 write!(f, "{}│  Value\n", child_prefix)?;
                 value.format_tree(f, &child_prefix, false, true)
             }
-            Node::Assignment { identifier, value } => {
-                write!(f, "{}Assignment {}\n", current_prefix, identifier)?;
+            Node::Assignment {
+                identifier,
+                value,
+                is_declaration,
+            } => {
+                write!(
+                    f,
+                    "{}Assignment (Deceleration: {}) {}\n",
+                    current_prefix, is_declaration, identifier
+                )?;
                 write!(f, "{}│  Value\n", child_prefix)?;
                 value.format_tree(f, &child_prefix, false, true)
             }

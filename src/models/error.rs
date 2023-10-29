@@ -169,15 +169,19 @@ impl fmt::Display for Runtime {
     }
 }
 
+impl From<Syntax> for Error {
+    fn from(err: Syntax) -> Self {
+        Error::Syntax(err)
+    }
+}
+
+impl From<Runtime> for Error {
+    fn from(err: Runtime) -> Self {
+        Error::Runtime(err)
+    }
+}
+
 impl Error {
-    pub fn syntax(kind: Syntax) -> Self {
-        Error::Syntax(kind)
-    }
-
-    pub fn runtime(kind: Runtime) -> Self {
-        Error::Runtime(kind)
-    }
-
     pub fn to_kind(&self) -> &str {
         match self {
             Self::Syntax(_) => "SyntaxError",

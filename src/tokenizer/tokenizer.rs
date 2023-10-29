@@ -26,9 +26,9 @@ macro_rules! raw {
 }
 
 #[macro_export]
-macro_rules! syntax_error {
+macro_rules! error {
     ($ErrorKind:expr) => {
-        Some(Err(Error::syntax($ErrorKind)))
+        Some(Err($ErrorKind.into()))
     };
 }
 
@@ -87,9 +87,9 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 '\'' => self.next_char(),
                 c if c.is_ascii_alphabetic() || c == '_' => self.next_identifier(c),
                 c if c.is_numeric() => self.next_number(c),
-                c => syntax_error!(Syntax::UnrecognizedChar {
+                c => error!(Syntax::UnrecognizedChar {
                     position: self.position.clone(),
-                    c
+                    c,
                 }),
             }
         } else {
@@ -151,7 +151,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             }
             _ => {
                 self.position.next();
-                syntax_error!(Syntax::UnexpectedChar {
+                error!(Syntax::UnexpectedChar {
                     position: self.get_position(),
                     c: '!'
                 })
@@ -224,7 +224,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             Some(_) => unreachable!(),
             None => {
                 self.position.next();
-                syntax_error!(Syntax::UnclosedStringDelimeter { start })
+                error!(Syntax::UnclosedStringDelimeter { start })
             }
         }
     }
@@ -239,7 +239,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 self.position.next();
             }
             None => {
-                return syntax_error!(Syntax::UnexpectedChar {
+                return error!(Syntax::UnexpectedChar {
                     position: self.get_position(),
                     c: '\''
                 })
@@ -253,13 +253,13 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
             }
             Some(c) => {
                 self.position.next();
-                syntax_error!(Syntax::UnclosedCharDelimeter {
+                error!(Syntax::UnclosedCharDelimeter {
                     start,
                     end: self.get_position(),
                     found: Some(c),
                 })
             }
-            None => syntax_error!(Syntax::UnclosedCharDelimeter {
+            None => error!(Syntax::UnclosedCharDelimeter {
                 start,
                 end: self.get_position(),
                 found: None,
@@ -281,7 +281,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 Some('.') => {
                     self.position.next();
                     if is_float {
-                        return syntax_error!(Syntax::MultipleFloatingPoints {
+                        return error!(Syntax::MultipleFloatingPoints {
                             start,
                             end: self.get_position(),
                         });
@@ -302,7 +302,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         if is_float {
             return match number.parse::<f32>() {
                 Ok(float) => raw!(start, end, TokenKind::Float(float)),
-                _ => syntax_error!(Syntax::InvalidFloatSize {
+                _ => error!(Syntax::InvalidFloatSize {
                     start: start,
                     end: end.unwrap(),
                 }),
@@ -310,7 +310,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         }
         match number.parse::<i32>() {
             Ok(int) => raw!(start, end, TokenKind::Integer(int)),
-            _ => syntax_error!(Syntax::InvalidIntegerSize {
+            _ => error!(Syntax::InvalidIntegerSize {
                 start: start,
                 end: end.unwrap(),
             }),

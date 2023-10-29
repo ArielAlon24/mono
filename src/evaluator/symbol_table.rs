@@ -22,4 +22,8 @@ impl SymbolTable {
     pub fn get(&mut self, identifier: &str) -> Option<Value> {
         self.symbol_table.get(identifier).cloned()
     }
+
+    pub fn contains(&mut self, identifier: &str) -> bool {
+        return self.get(identifier) != None;
+    }
 }
