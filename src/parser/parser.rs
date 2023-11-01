@@ -194,7 +194,7 @@ impl<'a> Parser<'a> {
     fn parse_assignment(&mut self, is_declaration: bool) -> ParserItem {
         let identifier = self.expect_token(TokenKind::Identifier(String::new()))?;
         self.expect_token(TokenKind::Assignment)?;
-        let value = self.parse_bool_expr()?;
+        let value = self.parse_statement()?;
         Ok(Box::new(Node::Assignment {
             identifier,
             value,
@@ -206,17 +206,31 @@ impl<'a> Parser<'a> {
         self.tokenizer.next(); // Going over the 'If' token.
         let condition = self.parse_bool_expr()?;
         let block = self.parse_block()?;
-        let mut else_block = None;
+
         if let Some(Ok(token)) = self.tokenizer.peek() {
-            if token.kind == TokenKind::Else {
-                self.tokenizer.next(); // Going over the 'Else' token.
-                else_block = Some(self.parse_block()?);
+            if token.kind != TokenKind::Else {
+                return Ok(Box::new(Node::If {
+                    condition,
+                    block,
+                    else_block: None,
+                }));
+            }
+
+            self.tokenizer.next(); // Going over the 'Else' token.
+            if let Some(Ok(token)) = self.tokenizer.peek() {
+                if token.kind == TokenKind::If {
+                    return Ok(Box::new(Node::If {
+                        condition,
+                        block,
+                        else_block: Some(self.parse_if()?),
+                    }));
+                }
             }
         }
         Ok(Box::new(Node::If {
             condition: condition,
             block: block,
-            else_block: else_block,
+            else_block: Some(self.parse_block()?),
         }))
     }
 

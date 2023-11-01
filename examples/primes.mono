@@ -18,8 +18,3 @@ if number < 2{
 }
 
 (is_prime == 1)
-
-
-f (a, b, c) => {
-
-}

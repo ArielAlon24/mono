@@ -67,8 +67,8 @@ impl Value {
 
     pub fn unary_operation(self, operator: &Token) -> Operation {
         match operator.kind {
-            TokenKind::Add => self.uadd(operator),
-            TokenKind::Sub => self.usub(operator),
+            TokenKind::Add => self.pos(operator),
+            TokenKind::Sub => self.neg(operator),
             TokenKind::Not => self.not(operator),
             _ => unreachable!(),
         }
@@ -82,7 +82,7 @@ impl Value {
         }
     }
 
-    fn uadd(self, operator: &Token) -> Operation {
+    fn pos(self, operator: &Token) -> Operation {
         match self {
             Value::Integer(a) => Ok(Value::Integer(a)),
             Value::Float(a) => Ok(Value::Float(a)),
@@ -98,7 +98,7 @@ impl Value {
         }
     }
 
-    fn usub(self, operator: &Token) -> Operation {
+    fn neg(self, operator: &Token) -> Operation {
         match self {
             Value::Integer(a) => Ok(Value::Integer(-a)),
             Value::Float(a) => Ok(Value::Float(-a)),

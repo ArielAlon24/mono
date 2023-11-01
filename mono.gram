@@ -38,17 +38,26 @@
 
 <Block>         ::= LeftCurly <Program> RightCurly
 
-<Assignment>    ::= Identifier Assignment <Expr>
+<Arguments>     ::= <Identifier>
+                | <Identifier> Comma
 
-<If>            ::= If <BoolExpr> <Block> [Else <Block>]>
+<Parameters>    ::= <BoolExpr>
+                | <BoolExpr> Comma
+
+<Assignment>    ::= Identifier Assignment <Statement>
+                | Identifier<Arguments> Assignment <Block>
+
+<If>            ::= If <BoolExpr> <Block>
+                | If <BoolExpr> <Block> Else <Block>
+                | If <BoolExpr> <Block> <Else> <If>
 
 <While>         ::= While <BoolExpr> <Block>
 
 <Statement>     ::= Let <Assignment>
                 | <Assignment>
-                | <BoolExpr>
                 | <If>
                 | <While>
+                | <BoolExpr> // for testing purposes
 
 <Program>       ::= <Statement> 
                 | <Statement> [NewLine <Statement>] * 
