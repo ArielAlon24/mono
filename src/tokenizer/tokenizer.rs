@@ -77,6 +77,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
                 '}' => single!(self.position, TokenKind::RightCurly),
                 '[' => single!(self.position, TokenKind::LeftBracket),
                 ']' => single!(self.position, TokenKind::RightBracket),
+                ',' => single!(self.position, TokenKind::Comma),
                 '\n' => self.next_line(),
                 '-' => self.next_dash(),
                 '=' => self.next_equals(),

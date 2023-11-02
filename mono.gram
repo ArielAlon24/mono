@@ -2,7 +2,7 @@
                 | Integer
                 | Float
                 | Identifier
-
+                | Identifier RightParen <Parameters> LeftParen
 <Power>         ::= <Atom>
                 | <Atom> [Pow <Factor>] *
 
@@ -38,8 +38,8 @@
 
 <Block>         ::= LeftCurly <Program> RightCurly
 
-<Arguments>     ::= <Identifier>
-                | <Identifier> Comma
+<Arguments>     ::= 
+                | <Identifier> Comma <Arguments>
 
 <Parameters>    ::= <BoolExpr>
                 | <BoolExpr> Comma

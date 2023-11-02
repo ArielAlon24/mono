@@ -10,7 +10,7 @@ pub struct Evaluator {
     symbol_table: SymbolTable,
 }
 
-type EvaluatorItem<'a> = Result<Value, Error>;
+type EvaluatorItem = Result<Value, Error>;
 
 impl Evaluator {
     pub fn new() -> Self {
@@ -125,6 +125,8 @@ impl Evaluator {
                 else_block,
             } => self.eval_if(condition, block, else_block),
             Node::While { condition, block } => self.eval_while(condition, block),
+            Node::FuncDeclearion { .. } => todo!(),
+            &Node::FuncCall { .. } => todo!(),
         }
     }
 }

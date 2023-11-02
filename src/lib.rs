@@ -50,7 +50,7 @@ pub fn parser(code: &str) {
     let mut parser = Parser::new(tokenizer);
     match parser.parse() {
         Err(error) => {
-            ereport!(red, "Evaluator Error", error);
+            ereport!(red, "Parser Error", error);
             return;
         }
         Ok(ast) => report!(green, "Ok", format!("{}", ast)),

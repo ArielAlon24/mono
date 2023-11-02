@@ -1,20 +1,18 @@
-let number = 5879     # Replace this with any number you want to test
-let end = number / 2
-let start = 2
-let is_prime = 1    # We'll use this as a boolean, where 1 is true and 0 is false
+let number = 5879  
+let is_prime = true
 
-if number < 2{
-    is_prime = 0
+if number < 2 {
+    is_prime = false
 } else {
-    let divisor = start
-    while divisor <= end {
+    let divisor = 2
+    while divisor <= number / 2 {
         if number % divisor == 0 {
-            is_prime = 0
-            divisor = end + 1  # This is a workaround to exit the loop since 'break' isn't implemented
+            is_prime = false
+            divisor = number 
         } else {
             divisor = divisor + 1
         }
     }
 }
 
-(is_prime == 1)
+(is_prime)

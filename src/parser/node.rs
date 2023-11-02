@@ -15,6 +15,15 @@ pub enum Node {
         operator: Token,
         value: Box<Node>,
     },
+    FuncDeclearion {
+        identifier: Token,
+        arguments: Vec<Token>,
+        body: Box<Node>,
+    },
+    FuncCall {
+        identifier: Token,
+        parameters: Vec<Box<Node>>,
+    },
     Assignment {
         identifier: Token,
         value: Box<Node>,
@@ -81,7 +90,7 @@ impl Node {
                     "{}Assignment (Deceleration: {}) {}\n",
                     current_prefix, is_declaration, identifier
                 )?;
-                write!(f, "{}│  Value\n", child_prefix)?;
+                write!(f, "{}│  Statement\n", child_prefix)?;
                 value.format_tree(f, &child_prefix, false, true)
             }
             Node::Access { identifier } => write!(f, "{}Access {}\n", current_prefix, identifier),
@@ -102,6 +111,13 @@ impl Node {
                 write!(f, "{}│  Block\n", child_prefix)?;
                 block.format_tree(f, &child_prefix, false, true)
             }
+            Node::While { condition, block } => {
+                write!(f, "{}While\n", current_prefix)?;
+                write!(f, "{}│  Condition\n", child_prefix)?;
+                condition.format_tree(f, &child_prefix, false, false)?;
+                write!(f, "{}│  Block\n", child_prefix)?;
+                block.format_tree(f, &child_prefix, false, true)
+            }
             Node::Program { statements } => {
                 write!(f, "{}Program\n", current_prefix)?;
                 for (index, statement) in statements.iter().enumerate() {
@@ -110,12 +126,30 @@ impl Node {
                 }
                 Ok(())
             }
-            Node::While { condition, block } => {
-                write!(f, "{}While\n", current_prefix)?;
-                write!(f, "{}│  Condition\n", child_prefix)?;
-                condition.format_tree(f, &child_prefix, false, false)?;
-                write!(f, "{}│  Block\n", child_prefix)?;
-                block.format_tree(f, &child_prefix, false, true)
+            Node::FuncDeclearion {
+                identifier,
+                arguments,
+                body,
+            } => {
+                write!(f, "{}FuncDeclearion {}\n", current_prefix, identifier)?;
+                write!(f, "{}│  Arguments\n", child_prefix)?;
+                for argument in arguments.iter() {
+                    write!(f, "{}├──── {:?}\n", child_prefix, argument.kind)?;
+                }
+                write!(f, "{}│  Body\n", child_prefix)?;
+                body.format_tree(f, &child_prefix, false, true)
+            }
+            Node::FuncCall {
+                identifier,
+                parameters,
+            } => {
+                write!(f, "{}FuncCall {}\n", current_prefix, identifier)?;
+                write!(f, "{}│  Parameters\n", child_prefix)?;
+                for (index, parameter) in parameters.iter().enumerate() {
+                    let is_last = index == parameters.len() - 1;
+                    parameter.format_tree(f, &child_prefix, false, is_last)?;
+                }
+                Ok(())
             }
         }
     }
