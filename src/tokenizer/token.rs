@@ -15,6 +15,7 @@ pub enum TokenKind {
     If,
     Else,
     While,
+    Return,
 
     // Builtin types
     Character(char),
@@ -74,6 +75,7 @@ impl TokenKind {
             "if" => Some(Self::If),
             "else" => Some(Self::Else),
             "while" => Some(Self::While),
+            "return" => Some(Self::Return),
             _ => None,
         }
     }

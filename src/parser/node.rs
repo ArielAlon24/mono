@@ -1,7 +1,7 @@
 use crate::tokenizer::token::Token;
 use std::fmt;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Node {
     Atom {
         value: Token,
@@ -40,6 +40,9 @@ pub enum Node {
     While {
         condition: Box<Node>,
         block: Box<Node>,
+    },
+    Return {
+        value: Box<Node>,
     },
     Program {
         statements: Vec<Box<Node>>,
@@ -150,6 +153,10 @@ impl Node {
                     parameter.format_tree(f, &child_prefix, false, is_last)?;
                 }
                 Ok(())
+            }
+            Self::Return { value } => {
+                write!(f, "{}Return\n", current_prefix)?;
+                value.format_tree(f, &child_prefix, false, true)
             }
         }
     }

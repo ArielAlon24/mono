@@ -1,3 +1,4 @@
+use crate::evaluator::builtin_functions;
 use crate::evaluator::symbol_table::SymbolTable;
 use crate::evaluator::value::Value;
 use crate::models::error::Error;
@@ -6,16 +7,66 @@ use crate::parser::node::Node;
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token::TokenKind;
 
-pub struct Evaluator {
-    symbol_table: SymbolTable,
+pub struct Evaluator<'a> {
+    symbol_table: Box<SymbolTable<'a>>,
 }
 
 type EvaluatorItem = Result<Value, Error>;
 
-impl Evaluator {
+impl<'a> Evaluator<'a> {
     pub fn new() -> Self {
+        let mut symbol_table = SymbolTable::new(None);
+        symbol_table.insert(
+            "print".to_string(),
+            Value::BuiltInFunction {
+                name: "print".to_string(),
+                arguments: vec!["x".to_string()],
+                function: builtin_functions::print,
+            },
+        );
         Self {
-            symbol_table: SymbolTable::new(None),
+            symbol_table: Box::new(symbol_table),
+        }
+    }
+
+    pub fn from(symbol_table: SymbolTable<'a>) -> Self {
+        Self {
+            symbol_table: Box::new(symbol_table),
+        }
+    }
+
+    pub fn evaluate(&mut self, program: &Node) -> EvaluatorItem {
+        match program {
+            Node::Atom { value } => self.eval_atom(&value),
+            Node::BinaryOp {
+                right,
+                operator,
+                left,
+            } => self.eval_binary_op(&right, &operator, &left),
+            Node::UnaryOp { operator, value } => self.eval_unary_op(operator, value),
+            Node::Assignment {
+                identifier,
+                value,
+                is_declaration,
+            } => self.eval_assignment(identifier, value, is_declaration),
+            Node::Access { identifier } => self.eval_access(identifier),
+            Node::Program { statements } => self.eval_program(statements),
+            Node::If {
+                condition,
+                block,
+                else_block,
+            } => self.eval_if(condition, block, else_block),
+            Node::While { condition, block } => self.eval_while(condition, block),
+            Node::FuncDeclearion {
+                identifier,
+                arguments,
+                body,
+            } => self.eval_func_declaration(identifier, arguments, body),
+            Node::FuncCall {
+                identifier,
+                parameters,
+            } => self.eval_func_call(identifier, parameters),
+            Node::Return { value } => self.eval_return(value),
         }
     }
 
@@ -73,6 +124,9 @@ impl Evaluator {
         let mut value = Value::None;
         for statement in statements {
             value = self.evaluate(&statement)?;
+            if value != Value::None {
+                break;
+            }
         }
         Ok(value)
     }
@@ -97,36 +151,90 @@ impl Evaluator {
     }
 
     fn eval_while(&mut self, condition: &Node, block: &Node) -> EvaluatorItem {
+        let mut value = Value::None;
         while let Value::Boolean(true) = self.evaluate(&condition)? {
-            self.evaluate(&block)?;
+            value = self.evaluate(&block)?;
+            if value != Value::None {
+                break;
+            }
         }
+        Ok(value)
+    }
+
+    fn eval_func_declaration(
+        &mut self,
+        identifier: &Token,
+        arguments: &[Token],
+        body: &Box<Node>,
+    ) -> EvaluatorItem {
+        if let TokenKind::Identifier(n) = &identifier.kind {
+            let string_arguments = arguments
+                .iter()
+                .map(|arg| {
+                    if let TokenKind::Identifier(name) = &arg.kind {
+                        name.to_string()
+                    } else {
+                        panic!("Expected identifier in function arguments");
+                    }
+                })
+                .collect::<Vec<String>>();
+
+            let function = Value::Function {
+                name: n.to_string(),
+                arguments: string_arguments,
+                body: body.clone(),
+            };
+            self.symbol_table.insert(n.to_string(), function);
+        } else {
+            panic!("Expected identifier for function name");
+        }
+
         Ok(Value::None)
     }
 
-    pub fn evaluate(&mut self, program: &Node) -> EvaluatorItem {
-        match program {
-            Node::Atom { value } => self.eval_atom(&value),
-            Node::BinaryOp {
-                right,
-                operator,
-                left,
-            } => self.eval_binary_op(&right, &operator, &left),
-            Node::UnaryOp { operator, value } => self.eval_unary_op(operator, value),
-            Node::Assignment {
-                identifier,
-                value,
-                is_declaration,
-            } => self.eval_assignment(identifier, value, is_declaration),
-            Node::Access { identifier } => self.eval_access(identifier),
-            Node::Program { statements } => self.eval_program(statements),
-            Node::If {
-                condition,
-                block,
-                else_block,
-            } => self.eval_if(condition, block, else_block),
-            Node::While { condition, block } => self.eval_while(condition, block),
-            Node::FuncDeclearion { .. } => todo!(),
-            &Node::FuncCall { .. } => todo!(),
+    fn eval_func_call(&mut self, identifier: &Token, parameters: &Vec<Box<Node>>) -> EvaluatorItem {
+        // TODO: Check corresponding arguments and parameters
+        if let TokenKind::Identifier(name) = &identifier.kind {
+            match self.symbol_table.get(&name) {
+                Some(Value::Function {
+                    name: _,
+                    arguments,
+                    body,
+                }) => {
+                    let mut pairs = Vec::new();
+                    for (name, parameter) in arguments.iter().zip(parameters.iter()) {
+                        pairs.push((name.to_string(), self.evaluate(parameter)?));
+                    }
+                    let mut child_table = SymbolTable::new(Some(&self.symbol_table));
+                    for (name, value) in pairs.into_iter() {
+                        child_table.insert(name, value);
+                    }
+                    let mut inner_evaluator = Evaluator::from(child_table);
+                    return inner_evaluator.evaluate(&body);
+                }
+                Some(Value::BuiltInFunction {
+                    name: _,
+                    arguments: _,
+                    function,
+                }) => {
+                    let mut values = Vec::new();
+                    for parameter in parameters.into_iter() {
+                        values.push(self.evaluate(parameter)?);
+                    }
+                    return Ok(function(values));
+                }
+                _ => {
+                    return Err(Runtime::UnknownIdentifier {
+                        identifier: identifier.clone(),
+                    }
+                    .into())
+                }
+            }
         }
+        unreachable!();
+    }
+
+    fn eval_return(&mut self, value: &Box<Node>) -> EvaluatorItem {
+        self.evaluate(value)
     }
 }

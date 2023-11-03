@@ -1,9 +1,20 @@
-
-let max(a, b, c) = {
-    if a > b and a > c {
-        (a)
-    } else if b > a and b > c {
-        (b)
+let is_even(n) => {
+    if (n % 2 == 0) {
+        return True
     }
-    (c)
+    return False
 }
+
+let main() => {
+    
+    let index = 1
+
+    while index < 1000 {
+        if is_even(index) {
+            print(index)
+        }
+        index = index + 1
+    }
+}
+
+main()

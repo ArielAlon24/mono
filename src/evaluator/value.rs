@@ -1,7 +1,9 @@
 use crate::models::error::{Error, Runtime};
+use crate::parser::node::Node;
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token::TokenKind;
 use std::fmt;
+
 macro_rules! invalid_operation {
     ($operator:expr, $right:expr, $left:expr) => {
         Err(Runtime::InvalidOperation {
@@ -18,6 +20,16 @@ pub enum Value {
     Integer(i32),
     Float(f32),
     Boolean(bool),
+    Function {
+        name: String,
+        arguments: Vec<String>,
+        body: Box<Node>,
+    },
+    BuiltInFunction {
+        name: String,
+        arguments: Vec<String>,
+        function: fn(Vec<Value>) -> Value,
+    },
     None,
 }
 
@@ -28,6 +40,8 @@ impl fmt::Display for Value {
             Value::Float(value) => write!(f, "{value}"),
             Value::Boolean(true) => write!(f, "True"),
             Value::Boolean(false) => write!(f, "False"),
+            Value::Function { name, .. } => write!(f, "<Function: {}>", name),
+            Value::BuiltInFunction { name, .. } => write!(f, "<Function: {}>", name),
             Value::None => write!(f, ""),
         }
     }

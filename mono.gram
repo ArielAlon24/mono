@@ -57,6 +57,7 @@
                 | <Assignment>
                 | <If>
                 | <While>
+                | Return <BoolExpr>
                 | <BoolExpr> // for testing purposes
 
 <Program>       ::= <Statement> 
