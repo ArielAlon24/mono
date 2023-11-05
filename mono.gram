@@ -3,6 +3,7 @@
                 | Float
                 | Identifier
                 | Identifier RightParen <Parameters> LeftParen
+
 <Power>         ::= <Atom>
                 | <Atom> [Pow <Factor>] *
 
@@ -58,7 +59,6 @@
                 | <If>
                 | <While>
                 | Return <BoolExpr>
-                | <BoolExpr> // for testing purposes
 
 <Program>       ::= <Statement> 
                 | <Statement> [NewLine <Statement>] * 

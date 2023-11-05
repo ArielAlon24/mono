@@ -1,4 +1,5 @@
-use crate::models::error::{Error, Runtime};
+use crate::models::error::MonoError;
+use crate::models::error::Runtime;
 use crate::parser::node::Node;
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token::TokenKind;
@@ -6,12 +7,11 @@ use std::fmt;
 
 macro_rules! invalid_operation {
     ($operator:expr, $right:expr, $left:expr) => {
-        Err(Runtime::InvalidOperation {
+        Err(Box::new(Runtime::InvalidOperation {
             operator: $operator.clone(),
             right: $right,
             left: $left,
-        }
-        .into())
+        }))
     };
 }
 
@@ -47,7 +47,7 @@ impl fmt::Display for Value {
     }
 }
 
-type Operation = Result<Value, Error>;
+type Operation = Result<Value, Box<dyn MonoError>>;
 
 impl Value {
     pub fn from(token: &Token) -> Self {
@@ -130,15 +130,15 @@ impl Value {
 
     fn div(self, other: Self, operator: &Token) -> Operation {
         match (self, other) {
-            (Value::Integer(_), Value::Integer(0)) => Err(Runtime::DivisionByZero {
+            (Value::Integer(_), Value::Integer(0)) => Err(Box::new(Runtime::DivisionByZero {
                 division: operator.clone(),
-            }
-            .into()),
+            })),
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a / b)),
-            (Value::Float(_), Value::Float(b)) if b == 0.0 => Err(Runtime::DivisionByZero {
-                division: operator.clone(),
+            (Value::Float(_), Value::Float(b)) if b == 0.0 => {
+                Err(Box::new(Runtime::DivisionByZero {
+                    division: operator.clone(),
+                }))
             }
-            .into()),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a / b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }

@@ -1,7 +1,7 @@
 use crate::evaluator::builtin_functions;
 use crate::evaluator::symbol_table::SymbolTable;
 use crate::evaluator::value::Value;
-use crate::models::error::Error;
+use crate::models::error::MonoError;
 use crate::models::error::Runtime;
 use crate::parser::node::Node;
 use crate::tokenizer::token::Token;
@@ -11,7 +11,7 @@ pub struct Evaluator<'a> {
     symbol_table: Box<SymbolTable<'a>>,
 }
 
-type EvaluatorItem = Result<Value, Error>;
+type EvaluatorItem = Result<Value, Box<dyn MonoError>>;
 
 impl<'a> Evaluator<'a> {
     pub fn new() -> Self {
@@ -97,10 +97,9 @@ impl<'a> Evaluator<'a> {
             if *is_declaration || self.symbol_table.contains(name) {
                 self.symbol_table.insert(name.to_string(), value);
             } else {
-                return Err(Runtime::UnknownIdentifier {
+                return Err(Box::new(Runtime::UnknownIdentifier {
                     identifier: identifier.clone(),
-                }
-                .into());
+                }));
             }
         }
 
@@ -112,10 +111,9 @@ impl<'a> Evaluator<'a> {
             if let Some(value) = self.symbol_table.get(name) {
                 return Ok(value);
             }
-            return Err(Runtime::UnknownIdentifier {
+            return Err(Box::new(Runtime::UnknownIdentifier {
                 identifier: identifier.clone(),
-            }
-            .into());
+            }));
         }
         unreachable!()
     }
@@ -224,10 +222,9 @@ impl<'a> Evaluator<'a> {
                     return Ok(function(values));
                 }
                 _ => {
-                    return Err(Runtime::UnknownIdentifier {
+                    return Err(Box::new(Runtime::UnknownIdentifier {
                         identifier: identifier.clone(),
-                    }
-                    .into())
+                    }))
                 }
             }
         }

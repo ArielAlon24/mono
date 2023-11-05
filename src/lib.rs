@@ -15,9 +15,9 @@ macro_rules! ereport {
         eprintln!(
             "{}\n{}{} {}\n",
             $header.$color().bold(),
-            ($error.to_kind()).$color().underline(),
+            ($error.kind()).$color().underline(),
             ":".red(),
-            ($error.to_message()).$color()
+            (format!("{}", $error)).$color()
         )
     };
 }

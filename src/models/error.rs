@@ -3,10 +3,8 @@ use crate::evaluator::value::Value;
 use crate::tokenizer::token::{Token, TokenKind};
 use std::fmt;
 
-#[derive(Debug, PartialEq)]
-pub enum Error {
-    Syntax(Syntax),
-    Runtime(Runtime),
+pub trait MonoError: fmt::Display {
+    fn kind(&self) -> &str;
 }
 
 #[derive(Debug, PartialEq)]
@@ -130,6 +128,12 @@ impl fmt::Display for Syntax {
     }
 }
 
+impl MonoError for Syntax {
+    fn kind(&self) -> &str {
+        "SyntaxError"
+    }
+}
+
 #[derive(Debug, PartialEq)]
 pub enum Runtime {
     DivisionByZero {
@@ -169,29 +173,8 @@ impl fmt::Display for Runtime {
     }
 }
 
-impl From<Syntax> for Error {
-    fn from(err: Syntax) -> Self {
-        Error::Syntax(err)
-    }
-}
-
-impl From<Runtime> for Error {
-    fn from(err: Runtime) -> Self {
-        Error::Runtime(err)
-    }
-}
-
-impl Error {
-    pub fn to_kind(&self) -> &str {
-        match self {
-            Self::Syntax(_) => "SyntaxError",
-            Self::Runtime(_) => "RuntimeError",
-        }
-    }
-    pub fn to_message(&self) -> String {
-        match self {
-            Self::Syntax(syntax) => format!("{}", syntax),
-            Self::Runtime(runtime) => format!("{}", runtime),
-        }
+impl MonoError for Runtime {
+    fn kind(&self) -> &str {
+        "RuntimeError"
     }
 }

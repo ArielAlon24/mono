@@ -1,9 +1,9 @@
-use crate::models::error::Error;
-use crate::models::error::Syntax;
+use crate::models::error::{MonoError, Syntax};
 use crate::parser::node::Node;
 use crate::tokenizer::token::{Token, TokenKind};
 use crate::Tokenizer;
 use core::str::Chars;
+
 use std::iter::Peekable;
 
 macro_rules! atom {
@@ -14,26 +14,24 @@ macro_rules! atom {
 
 macro_rules! unexpected_token {
     ($token:expr, $expected:expr) => {
-        Err(Syntax::UnexpectedToken {
+        Err(Box::new(Syntax::UnexpectedToken {
             token: $token,
             expected: $expected,
-        }
-        .into())
+        }))
     };
 }
 
 macro_rules! unclosed_token {
     ($start:expr, $end:expr, $delimeter:expr) => {
-        Err(Syntax::UnclosedTokenDelimeter {
+        Err(Box::new(Syntax::UnclosedTokenDelimeter {
             start: $start,
             found: $end,
             delimiter: $delimeter,
-        }
-        .into())
+        }))
     };
 }
 
-type ParserItem = Result<Box<Node>, Error>;
+type ParserItem = Result<Box<Node>, Box<dyn MonoError>>;
 
 pub struct Parser<'a> {
     tokenizer: Tokenizer<Peekable<Chars<'a>>>,
@@ -48,11 +46,11 @@ impl<'a> Parser<'a> {
         self.parse_program()
     }
 
-    fn expect_token(&mut self, expected: TokenKind) -> Result<Token, Error> {
+    fn expect_token(&mut self, expected: TokenKind) -> Result<Token, Box<dyn MonoError>> {
         match self.tokenizer.next() {
             Some(Ok(token)) if token.kind == expected => Ok(token),
             Some(Ok(token)) => unexpected_token!(token, vec![expected]),
-            _ => Err(Syntax::UnexpectedEOF.into()),
+            _ => Err(Box::new(Syntax::UnexpectedEOF)),
         }
     }
 
@@ -91,7 +89,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_parameters(&mut self) -> Result<Vec<Box<Node>>, Error> {
+    fn parse_parameters(&mut self) -> Result<Vec<Box<Node>>, Box<dyn MonoError>> {
         if let Some(Ok(token)) = self.tokenizer.peek() {
             if token.kind == TokenKind::RightParen {
                 return Ok(Vec::new());
@@ -123,7 +121,7 @@ impl<'a> Parser<'a> {
         &mut self,
         item: TokenKind,
         delimiter: TokenKind,
-    ) -> Result<Vec<Token>, Error> {
+    ) -> Result<Vec<Token>, Box<dyn MonoError>> {
         let mut items = Vec::new();
         let mut expect_item = true;
 
@@ -166,7 +164,7 @@ impl<'a> Parser<'a> {
 
     fn parse_atom(&mut self) -> ParserItem {
         if let None = self.tokenizer.peek() {
-            return Err(Syntax::UnexpectedEOF.into());
+            return Err(Box::new(Syntax::UnexpectedEOF));
         }
 
         let token = self.tokenizer.next().unwrap()?;
@@ -287,7 +285,7 @@ impl<'a> Parser<'a> {
 
     fn parse_assignment(&mut self, identifier: Token, is_declaration: bool) -> ParserItem {
         if let None = self.tokenizer.peek() {
-            return Err(Syntax::UnexpectedEOF.into());
+            return Err(Box::new(Syntax::UnexpectedEOF));
         }
         let token = self.tokenizer.next().unwrap()?;
         if token.kind == TokenKind::LeftParen {
@@ -318,6 +316,14 @@ impl<'a> Parser<'a> {
         self.tokenizer.next(); // Going over the 'If' token.
         let condition = self.parse_bool_expr()?;
         let block = self.parse_block()?;
+
+        if let None = self.tokenizer.peek() {
+            return Ok(Box::new(Node::If {
+                condition,
+                block,
+                else_block: None,
+            }));
+        }
 
         if let Some(Ok(token)) = self.tokenizer.peek() {
             if token.kind != TokenKind::Else {
@@ -363,7 +369,7 @@ impl<'a> Parser<'a> {
 
     fn parse_statement(&mut self) -> ParserItem {
         match self.tokenizer.peek() {
-            None => Err(Syntax::UnexpectedEOF.into()),
+            None => Err(Box::new(Syntax::UnexpectedEOF)),
             Some(Err(_)) => Err(self.tokenizer.next().expect("unreachable").unwrap_err()),
             Some(Ok(token)) => match token.kind {
                 TokenKind::Let => {
@@ -375,7 +381,6 @@ impl<'a> Parser<'a> {
                 TokenKind::While => self.parse_while(),
                 TokenKind::Identifier(_) => self.parse_identifier_statement(),
                 TokenKind::Return => self.parse_return(),
-                // _ => self.parse_bool_expr(),
                 _ => unexpected_token!(
                     self.tokenizer.next().unwrap()?,
                     vec![
@@ -398,13 +403,12 @@ impl<'a> Parser<'a> {
             Some(Ok(token)) if token.kind == TokenKind::LeftParen => {
                 self.parse_func_call(identifier)
             }
-            // Some(Ok(_)) => self.parse_bool_expr(),
             Some(Ok(_)) => unexpected_token!(
                 self.tokenizer.next().unwrap()?,
                 vec![TokenKind::Assignment, TokenKind::LeftParen]
             ),
             Some(Err(_)) => Err(self.tokenizer.next().expect("unreachable").unwrap_err()),
-            None => Err(Syntax::UnexpectedEOF.into()),
+            None => Err(Box::new(Syntax::UnexpectedEOF)),
         }
     }
 

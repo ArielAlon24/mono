@@ -1,4 +1,4 @@
-use crate::models::error::{Error, Syntax};
+use crate::models::error::{MonoError, Syntax};
 use crate::models::position::Position;
 use crate::tokenizer::token::{Token, TokenKind};
 
@@ -28,11 +28,11 @@ macro_rules! raw {
 #[macro_export]
 macro_rules! error {
     ($ErrorKind:expr) => {
-        Some(Err($ErrorKind.into()))
+        Some(Err(Box::new($ErrorKind)))
     };
 }
 
-pub type TokenizerItem = Option<Result<Token, Error>>;
+pub type TokenizerItem = Option<Result<Token, Box<dyn MonoError>>>;
 
 pub struct Tokenizer<Chars: Iterator<Item = char>> {
     chars: Chars,
@@ -320,9 +320,9 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
 }
 
 impl<Chars: Iterator<Item = char>> Iterator for Tokenizer<Peekable<Chars>> {
-    type Item = Result<Token, Error>;
+    type Item = Result<Token, Box<dyn MonoError>>;
 
-    fn next(&mut self) -> Option<Result<Token, Error>> {
+    fn next(&mut self) -> Option<Result<Token, Box<dyn MonoError>>> {
         let current = self.overhead.take();
         self.overhead = self._next();
         current
