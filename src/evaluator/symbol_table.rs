@@ -1,5 +1,6 @@
+use crate::evaluator::builtins;
+use crate::evaluator::builtins::builtin;
 use crate::evaluator::value::Value;
-
 use std::collections::HashMap;
 
 pub struct SymbolTable<'a> {
@@ -19,6 +20,10 @@ impl<'a> SymbolTable<'a> {
         self.symbol_table.insert(identifier, value);
     }
 
+    pub fn insert_tuple(&mut self, (identifier, value): (String, Value)) {
+        self.symbol_table.insert(identifier, value);
+    }
+
     pub fn get(&self, identifier: &str) -> Option<Value> {
         match self.symbol_table.get(identifier) {
             Some(value) => Some(value.clone()),
@@ -31,5 +36,10 @@ impl<'a> SymbolTable<'a> {
 
     pub fn contains(&mut self, identifier: &str) -> bool {
         return self.get(identifier) != None;
+    }
+
+    pub fn add_builtins(&mut self) {
+        self.insert_tuple(builtin("print", vec!["x"], builtins::print));
+        self.insert_tuple(builtin("exit", vec!["exit_code"], builtins::exit));
     }
 }

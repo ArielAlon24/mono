@@ -1,18 +1,30 @@
-let number = 5879  
-let is_prime = true
+let is_prime(n) => {
+    if n <= 1 { return False }
+    if n <= 3 { return True }
+    if n % 2 == 0 or n % 3 == 0 { return False }
 
-if number < 2 {
-    is_prime = false
-} else {
-    let divisor = 2
-    while divisor <= number / 2 {
-        if number % divisor == 0 {
-            is_prime = false
-            divisor = number 
-        } else {
-            divisor = divisor + 1
+    let i = 5
+
+    while i * i <= n {
+        if n % i == 0 or n % (i + 2) == 0 {
+            return False
         }
+        i = i + 6
+    }
+
+    return True
+}
+
+let main() => {
+    
+    let index = 1
+
+    while index < 10000 {
+        if is_prime(index) {
+            print(index)
+        }
+        index = index + 1
     }
 }
 
-(is_prime)
+main()

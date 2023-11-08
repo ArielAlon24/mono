@@ -1,4 +1,3 @@
-use crate::evaluator::builtin_functions;
 use crate::evaluator::symbol_table::SymbolTable;
 use crate::evaluator::value::Value;
 use crate::models::error::MonoError;
@@ -16,14 +15,7 @@ type EvaluatorItem = Result<Value, Box<dyn MonoError>>;
 impl<'a> Evaluator<'a> {
     pub fn new() -> Self {
         let mut symbol_table = SymbolTable::new(None);
-        symbol_table.insert(
-            "print".to_string(),
-            Value::BuiltInFunction {
-                name: "print".to_string(),
-                arguments: vec!["x".to_string()],
-                function: builtin_functions::print,
-            },
-        );
+        symbol_table.add_builtins();
         Self {
             symbol_table: Box::new(symbol_table),
         }
@@ -191,35 +183,51 @@ impl<'a> Evaluator<'a> {
     }
 
     fn eval_func_call(&mut self, identifier: &Token, parameters: &Vec<Box<Node>>) -> EvaluatorItem {
-        // TODO: Check corresponding arguments and parameters
+        let mut values = Vec::new();
+        for parameter in parameters {
+            values.push(self.evaluate(parameter)?);
+        }
         if let TokenKind::Identifier(name) = &identifier.kind {
             match self.symbol_table.get(&name) {
                 Some(Value::Function {
-                    name: _,
+                    name,
                     arguments,
                     body,
                 }) => {
-                    let mut pairs = Vec::new();
-                    for (name, parameter) in arguments.iter().zip(parameters.iter()) {
-                        pairs.push((name.to_string(), self.evaluate(parameter)?));
+                    if arguments.len() != parameters.len() {
+                        return Err(Box::new(Runtime::IncorrectParameters {
+                            name: name,
+                            call: identifier.clone(),
+                            expected: arguments,
+                            found: values,
+                        }));
                     }
                     let mut child_table = SymbolTable::new(Some(&self.symbol_table));
-                    for (name, value) in pairs.into_iter() {
-                        child_table.insert(name, value);
-                    }
+                    arguments
+                        .into_iter()
+                        .zip(values.into_iter())
+                        .for_each(|(arg, val)| {
+                            child_table.insert(arg.to_string(), val);
+                        });
                     let mut inner_evaluator = Evaluator::from(child_table);
                     return inner_evaluator.evaluate(&body);
                 }
                 Some(Value::BuiltInFunction {
-                    name: _,
-                    arguments: _,
+                    name,
+                    arguments,
                     function,
                 }) => {
-                    let mut values = Vec::new();
-                    for parameter in parameters.into_iter() {
-                        values.push(self.evaluate(parameter)?);
+                    return match arguments.len() {
+                        length if length != parameters.len() => {
+                            Err(Box::new(Runtime::IncorrectParameters {
+                                name: name,
+                                call: identifier.clone(),
+                                expected: arguments,
+                                found: values,
+                            }))
+                        }
+                        _ => Ok(function(values)),
                     }
-                    return Ok(function(values));
                 }
                 _ => {
                     return Err(Box::new(Runtime::UnknownIdentifier {

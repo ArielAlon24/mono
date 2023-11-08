@@ -147,6 +147,12 @@ pub enum Runtime {
     UnknownIdentifier {
         identifier: Token,
     },
+    IncorrectParameters {
+        name: String,
+        call: Token,
+        expected: Vec<String>,
+        found: Vec<Value>,
+    }
 }
 
 impl fmt::Display for Runtime {
@@ -168,6 +174,14 @@ impl fmt::Display for Runtime {
             }
             Self::UnknownIdentifier { identifier } => {
                 write!(f, "Unknown identifier `{}` detected.", identifier)
+            }
+            Self::IncorrectParameters { expected, found, name, call } => {
+                write!(f, "Incorrect parameters: ({}) for function '{}' at {}, expected: ({}).", 
+                    found.iter().map(|v| format!("{}", v)).collect::<Vec<_>>().join(", "),
+                    name,
+                    call.start,
+                    expected.iter().map(|p| format!("{}", p)).collect::<Vec<_>>().join(", ")
+                )
             }
         }
     }

@@ -51,7 +51,7 @@ impl<Chars: Iterator<Item = char>> Tokenizer<Peekable<Chars>> {
         tokenizer
     }
 
-    pub fn peek(&mut self) -> &TokenizerItem {
+    pub fn peek(&self) -> &TokenizerItem {
         &self.overhead
     }
 

@@ -87,15 +87,16 @@ fn file(path: &str, mode: Mode) -> Result<(), Box<dyn std::error::Error>> {
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
 
-    if let Some(ext) = path.extension() {
-        if ext == "mono" {
-            run(&mode, &contents, None);
-            Ok(())
-        } else {
-            Err(Box::from("File does not have the desired suffix."))
-        }
+    let ext = path
+        .extension()
+        .and_then(|ext| ext.to_str())
+        .ok_or_else(|| "File does not have an extension.")?;
+
+    if ext == "mono" {
+        run(&mode, &contents, None);
+        Ok(())
     } else {
-        Err(Box::from("File does not have an extension."))
+        Err(Box::from("File does not have the desired suffix."))
     }
 }
 
