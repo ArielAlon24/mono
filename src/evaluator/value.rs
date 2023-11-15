@@ -20,6 +20,8 @@ pub enum Value {
     Integer(i32),
     Float(f32),
     Boolean(bool),
+    String(String),
+    Character(char),
     Function {
         name: String,
         arguments: Vec<String>,
@@ -40,6 +42,8 @@ impl fmt::Display for Value {
             Value::Float(value) => write!(f, "{value}"),
             Value::Boolean(true) => write!(f, "True"),
             Value::Boolean(false) => write!(f, "False"),
+            Value::String(value) => write!(f, "{value}"),
+            Value::Character(value) => write!(f, "{value}"),
             Value::Function { name, .. } => write!(f, "<Function: {}>", name),
             Value::BuiltInFunction { name, .. } => write!(f, "<Function: {}>", name),
             Value::None => write!(f, ""),
@@ -51,10 +55,12 @@ type Operation = Result<Value, Box<dyn MonoError>>;
 
 impl Value {
     pub fn from(token: &Token) -> Self {
-        match token.kind {
-            TokenKind::Integer(value) => Self::Integer(value),
-            TokenKind::Float(value) => Self::Float(value),
-            TokenKind::Boolean(value) => Self::Boolean(value),
+        match &token.kind {
+            TokenKind::Integer(value) => Self::Integer(*value),
+            TokenKind::Float(value) => Self::Float(*value),
+            TokenKind::Boolean(value) => Self::Boolean(*value),
+            TokenKind::String(value) => Self::String(value.to_string()),
+            TokenKind::Character(value) => Self::Character(*value),
             _ => unreachable!(),
         }
     }
@@ -92,6 +98,8 @@ impl Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a + b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a + b)),
+            (Value::String(a), Value::String(b)) => Ok(Value::String(format!("{a}{b}"))),
+            (Value::Character(a), Value::Character(b)) => Ok(Value::String(format!("{a}{b}"))),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
@@ -124,6 +132,13 @@ impl Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a * b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a * b)),
+            (Value::String(a), Value::Integer(b)) if b >= 0 => {
+                Ok(Value::String(a.repeat(b as usize)))
+            }
+            (Value::String(_), Value::Integer(b)) if b < 0 => todo!(),
+            (Value::Character(a), Value::Integer(b)) if b >= 0 => {
+                Ok(Value::String(a.to_string().repeat(b as usize)))
+            }
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
@@ -191,6 +206,8 @@ impl Value {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a == b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a == b)),
             (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a == b)),
+            (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a == b)),
+            (Value::Character(a), Value::Character(b)) => Ok(Value::Boolean(a == b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
@@ -200,6 +217,8 @@ impl Value {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a != b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a != b)),
             (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a ^ b)),
+            (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a != b)),
+            (Value::Character(a), Value::Character(b)) => Ok(Value::Boolean(a != b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
@@ -208,6 +227,8 @@ impl Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a > b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a > b)),
+            (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a > b)),
+            (Value::Character(a), Value::Character(b)) => Ok(Value::Boolean(a > b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
@@ -216,6 +237,8 @@ impl Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a >= b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a >= b)),
+            (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a >= b)),
+            (Value::Character(a), Value::Character(b)) => Ok(Value::Boolean(a >= b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
@@ -224,6 +247,8 @@ impl Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a < b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a < b)),
+            (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a < b)),
+            (Value::Character(a), Value::Character(b)) => Ok(Value::Boolean(a < b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
@@ -232,6 +257,8 @@ impl Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a <= b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a <= b)),
+            (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a <= b)),
+            (Value::Character(a), Value::Character(b)) => Ok(Value::Boolean(a <= b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }

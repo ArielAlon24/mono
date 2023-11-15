@@ -187,7 +187,11 @@ impl<'a> Parser<'a> {
                 self.close_delimiter(token, TokenKind::RightParen)?;
                 Ok(bool_expr)
             }
-            TokenKind::Integer(_) | TokenKind::Float(_) | TokenKind::Boolean(_) => atom!(token),
+            TokenKind::Integer(_)
+            | TokenKind::Float(_)
+            | TokenKind::Boolean(_)
+            | TokenKind::Character(_)
+            | TokenKind::String(_) => atom!(token),
             TokenKind::Identifier(_) => match self.tokenizer.peek() {
                 Some(Ok(paren)) if paren.kind == TokenKind::LeftParen => {
                     self.parse_func_call(token)
@@ -202,6 +206,8 @@ impl<'a> Parser<'a> {
                         TokenKind::Integer(0),
                         TokenKind::Float(0.0),
                         TokenKind::Identifier("".to_string()),
+                        TokenKind::String("".to_string()),
+                        TokenKind::Character(' '),
                         TokenKind::Add,
                         TokenKind::Sub,
                     ]

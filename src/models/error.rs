@@ -167,7 +167,7 @@ impl fmt::Display for Runtime {
                 left,
             } => {
                 if let Some(right) = right {
-                    write!(f, "Invalid binary operation detected. Operator `{:?}` was used with left value `{:?}` and right value `{:?}`.", operator.kind, left, right)
+                    write!(f, "Invalid binary operation detected. Operator `{:?}` was used with left value `{:?}` and right value `{:?}`.", operator.kind, right, left)
                 } else {
                     write!(f, "Invalid unary operation detected. Operator `{:?}` was used with value `{:?}`.", operator.kind, left)
                 }
