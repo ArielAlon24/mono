@@ -1,0 +1,80 @@
+let x1 = ' '
+let x2 = ' '
+let x3 = ' '
+let x4 = ' '
+let x5 = ' '
+let x6 = ' '
+let x7 = ' '
+let x8 = ' '
+let x9 = ' '
+
+let main() => {
+    let current = 'x'
+
+    while True {
+        render()
+
+        let result = check_win()
+        if result == 'x' {
+            println("x wins!")
+            exit(0)
+        } else if result == 'o' {
+            println("o wins!")
+            exit(0)
+        }
+
+        current = change(current)
+
+        print("Enter number: ")
+        let number = integer(input())
+
+        if number == 1 and x1 == ' ' { x1 = current } 
+        else if number == 2 and x2 == ' ' { x2 = current } 
+        else if number == 3 and x3 == ' ' { x3 = current } 
+        else if number == 4 and x4 == ' ' { x4 = current } 
+        else if number == 5 and x5 == ' ' { x5 = current } 
+        else if number == 6 and x6 == ' ' { x6 = current } 
+        else if number == 7 and x7 == ' ' { x7 = current } 
+        else if number == 8 and x8 == ' ' { x8 = current } 
+        else if number == 9 and x9 == ' ' { x9 = current } 
+        else {
+            println("ERROR: invalid number!")
+            exit(1)
+        }
+    }
+}
+
+let change(current) => {
+    if current == 'x' {
+        return 'o'
+    } else {
+        return 'x'
+    }
+}
+
+let render() => {
+    println("")
+    println(x1 + "|" + x2 + "|" + x3)
+    println("-----")
+    println(x4 + "|" + x5 + "|" + x6)
+    println("-----")
+    println(x7 + "|" + x8 + "|" + x9)
+    println("")
+}
+
+let check_win() => {
+    # Horizontal lines
+    if x1 == x2 and x2 == x3 { return x1 }
+    else if x4 == x5 and x5 == x6 { return x4 }
+    else if x7 == x8 and x8 == x9 { return x7 }
+    # Verical lines
+    else if x1 == x4 and x4 == x7 { return x1 }
+    else if x2 == x5 and x5 == x8 { return x2 }
+    else if x3 == x6 and x6 == x9 { return x3 }
+    # Diagonal lines
+    else if x1 == x5 and x5 == x9 { return x1 }
+    else if x3 == x5 and x5 == x7 { return x3 }
+    else { return ' ' }
+}
+
+main()

@@ -1,4 +1,6 @@
 use crate::Value;
+use std::io;
+use std::io::Write;
 use std::process;
 
 pub fn builtin(name: &str, arg_names: Vec<&str>, func: fn(Vec<Value>) -> Value) -> (String, Value) {
@@ -13,8 +15,32 @@ pub fn builtin(name: &str, arg_names: Vec<&str>, func: fn(Vec<Value>) -> Value) 
     )
 }
 
-pub fn print(values: Vec<Value>) -> Value {
+pub fn println(values: Vec<Value>) -> Value {
+    if values.len() != 1 {
+        todo!()
+    }
     print!("{}\n", values[0]);
+    Value::None
+}
+
+pub fn print(values: Vec<Value>) -> Value {
+    if values.len() != 1 {
+        todo!()
+    }
+
+    print!("{}", values[0]);
+    io::stdout().flush().unwrap();
+    Value::None
+}
+
+pub fn input(values: Vec<Value>) -> Value {
+    if values.len() != 0 {
+        todo!()
+    }
+    let mut input = String::new();
+    if io::stdin().read_line(&mut input).is_ok() {
+        return Value::String(input.trim_end().to_owned());
+    }
     Value::None
 }
 
@@ -29,4 +55,24 @@ pub fn exit(values: Vec<Value>) -> Value {
         }
     }
     Value::None
+}
+
+pub fn integer(values: Vec<Value>) -> Value {
+    if values.len() != 1 {
+        todo!()
+    }
+    match &values[0] {
+        Value::String(value) => match value.parse::<i32>() {
+            Ok(integer) => Value::Integer(integer),
+            Err(_) => Value::None,
+        },
+        _ => Value::None,
+    }
+}
+
+pub fn string(values: Vec<Value>) -> Value {
+    if values.len() != 1 {
+        todo!()
+    }
+    Value::String(format!("{}", values[0]))
 }

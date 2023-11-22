@@ -46,7 +46,7 @@ impl fmt::Display for Value {
             Value::Character(value) => write!(f, "{value}"),
             Value::Function { name, .. } => write!(f, "<Function: {}>", name),
             Value::BuiltInFunction { name, .. } => write!(f, "<Function: {}>", name),
-            Value::None => write!(f, ""),
+            Value::None => write!(f, "None"),
         }
     }
 }
@@ -61,6 +61,7 @@ impl Value {
             TokenKind::Boolean(value) => Self::Boolean(*value),
             TokenKind::String(value) => Self::String(value.to_string()),
             TokenKind::Character(value) => Self::Character(*value),
+            TokenKind::None => Self::None,
             _ => unreachable!(),
         }
     }
@@ -100,6 +101,8 @@ impl Value {
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a + b)),
             (Value::String(a), Value::String(b)) => Ok(Value::String(format!("{a}{b}"))),
             (Value::Character(a), Value::Character(b)) => Ok(Value::String(format!("{a}{b}"))),
+            (Value::String(a), Value::Character(b)) => Ok(Value::String(format!("{a}{b}"))),
+            (Value::Character(a), Value::String(b)) => Ok(Value::String(format!("{a}{b}"))),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
@@ -208,6 +211,8 @@ impl Value {
             (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a == b)),
             (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a == b)),
             (Value::Character(a), Value::Character(b)) => Ok(Value::Boolean(a == b)),
+            (Value::None, Value::None) => Ok(Value::Boolean(true)),
+            (_, Value::None) | (Value::None, _) => Ok(Value::Boolean(false)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
@@ -219,6 +224,8 @@ impl Value {
             (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a ^ b)),
             (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a != b)),
             (Value::Character(a), Value::Character(b)) => Ok(Value::Boolean(a != b)),
+            (Value::None, Value::None) => Ok(Value::Boolean(false)),
+            (_, Value::None) | (Value::None, _) => Ok(Value::Boolean(true)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }

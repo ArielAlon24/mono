@@ -39,7 +39,11 @@ impl<'a> SymbolTable<'a> {
     }
 
     pub fn add_builtins(&mut self) {
+        self.insert_tuple(builtin("println", vec!["x"], builtins::println));
         self.insert_tuple(builtin("print", vec!["x"], builtins::print));
         self.insert_tuple(builtin("exit", vec!["exit_code"], builtins::exit));
+        self.insert_tuple(builtin("input", Vec::new(), builtins::input));
+        self.insert_tuple(builtin("integer", vec!["string"], builtins::integer));
+        self.insert_tuple(builtin("string", vec!["value"], builtins::string));
     }
 }

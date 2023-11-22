@@ -54,6 +54,17 @@ impl<'a> Parser<'a> {
             None => Err(Box::new(Syntax::UnexpectedEOF)),
         }
     }
+
+    fn consume(&mut self, kind: TokenKind) {
+        while let Some(Ok(token)) = self.tokenizer.peek() {
+            if token.kind == kind {
+                self.tokenizer.next();
+            } else {
+                break;
+            }
+        }
+    }
+
     fn parse_binary_op(
         &mut self,
         operators: &[TokenKind],
@@ -191,7 +202,8 @@ impl<'a> Parser<'a> {
             | TokenKind::Float(_)
             | TokenKind::Boolean(_)
             | TokenKind::Character(_)
-            | TokenKind::String(_) => atom!(token),
+            | TokenKind::String(_)
+            | TokenKind::None => atom!(token),
             TokenKind::Identifier(_) => match self.tokenizer.peek() {
                 Some(Ok(paren)) if paren.kind == TokenKind::LeftParen => {
                     self.parse_func_call(token)
@@ -327,6 +339,8 @@ impl<'a> Parser<'a> {
         let condition = self.parse_bool_expr()?;
         let block = self.parse_block()?;
 
+        self.consume(TokenKind::NewLine);
+
         match self.tokenizer.peek() {
             Some(Ok(token)) if token.kind == TokenKind::Else => (),
             _ => {
@@ -339,6 +353,9 @@ impl<'a> Parser<'a> {
         }
 
         self.tokenizer.next(); // Going over the 'Else' token
+
+        self.consume(TokenKind::NewLine);
+
         let else_block = if matches!(self.tokenizer.peek(), Some(Ok(token)) if token.kind == TokenKind::If)
         {
             Some(self.parse_if()?)
