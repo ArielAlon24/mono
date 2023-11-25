@@ -2,7 +2,9 @@
                 | Integer
                 | Float
                 | Identifier
-                | Identifier RightParen <Parameters> LeftParen
+                | Identifier LeftParen <Parameters> RightParen
+                | LeftBracket <Arguments> RightBracket
+                | Identifier LeftBracket <Expr> RightBracket
 
 <Power>         ::= <Atom>
                 | <Atom> [Pow <Factor>] *

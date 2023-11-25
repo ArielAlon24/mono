@@ -6,6 +6,9 @@ pub enum Node {
     Atom {
         value: Token,
     },
+    List {
+        values: Vec<Box<Node>>,
+    },
     BinaryOp {
         left: Box<Node>,
         operator: Token,
@@ -29,8 +32,17 @@ pub enum Node {
         value: Box<Node>,
         is_declaration: bool,
     },
+    ListAssignment {
+        identifier: Token,
+        index: Box<Node>,
+        value: Box<Node>,
+    },
     Access {
         identifier: Token,
+    },
+    Index {
+        identifier: Token,
+        index: Box<Node>,
     },
     If {
         condition: Box<Node>,
@@ -67,6 +79,14 @@ impl Node {
 
         match self {
             Node::Atom { value } => write!(f, "{}Atom {}\n", current_prefix, value),
+            Node::List { values } => {
+                write!(f, "{}List\n", current_prefix)?;
+                for (index, value) in values.iter().enumerate() {
+                    let is_last = index == values.len() - 1;
+                    value.format_tree(f, &child_prefix, false, is_last)?;
+                }
+                Ok(())
+            }
             Node::BinaryOp {
                 left,
                 operator,
@@ -93,7 +113,18 @@ impl Node {
                     "{}Assignment (Deceleration: {}) {}\n",
                     current_prefix, is_declaration, identifier
                 )?;
-                write!(f, "{}│  Statement\n", child_prefix)?;
+                write!(f, "{}│  Value\n", child_prefix)?;
+                value.format_tree(f, &child_prefix, false, true)
+            }
+            Node::ListAssignment {
+                identifier,
+                index,
+                value,
+            } => {
+                write!(f, "{}ListAssignment: {}\n", current_prefix, identifier)?;
+                write!(f, "{}│  Index\n", child_prefix)?;
+                index.format_tree(f, &child_prefix, false, false)?;
+                write!(f, "{}│  Value\n", child_prefix)?;
                 value.format_tree(f, &child_prefix, false, true)
             }
             Node::Access { identifier } => write!(f, "{}Access {}\n", current_prefix, identifier),
@@ -157,6 +188,11 @@ impl Node {
             Self::Return { value } => {
                 write!(f, "{}Return\n", current_prefix)?;
                 value.format_tree(f, &child_prefix, false, true)
+            }
+            Node::Index { identifier, index } => {
+                write!(f, "{}Index {}\n", current_prefix, identifier)?;
+                write!(f, "{}│  At\n", child_prefix)?;
+                index.format_tree(f, &child_prefix, false, true)
             }
         }
     }

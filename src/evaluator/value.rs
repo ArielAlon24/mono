@@ -3,6 +3,9 @@ use crate::models::error::Runtime;
 use crate::parser::node::Node;
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token::TokenKind;
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use std::fmt;
 
 macro_rules! invalid_operation {
@@ -22,6 +25,7 @@ pub enum Value {
     Boolean(bool),
     String(String),
     Character(char),
+    List(Rc<RefCell<Vec<Value>>>),
     Function {
         name: String,
         arguments: Vec<String>,
@@ -44,6 +48,15 @@ impl fmt::Display for Value {
             Value::Boolean(false) => write!(f, "False"),
             Value::String(value) => write!(f, "{value}"),
             Value::Character(value) => write!(f, "{value}"),
+            Value::List(list) => {
+                let format = list
+                    .borrow()
+                    .iter()
+                    .map(|value| format!("{}", value))
+                    .collect::<Vec<String>>()
+                    .join(", ");
+                write!(f, "[{format}]")
+            }
             Value::Function { name, .. } => write!(f, "<Function: {}>", name),
             Value::BuiltInFunction { name, .. } => write!(f, "<Function: {}>", name),
             Value::None => write!(f, "None"),
@@ -54,18 +67,6 @@ impl fmt::Display for Value {
 type Operation = Result<Value, Box<dyn MonoError>>;
 
 impl Value {
-    pub fn from(token: &Token) -> Self {
-        match &token.kind {
-            TokenKind::Integer(value) => Self::Integer(*value),
-            TokenKind::Float(value) => Self::Float(*value),
-            TokenKind::Boolean(value) => Self::Boolean(*value),
-            TokenKind::String(value) => Self::String(value.to_string()),
-            TokenKind::Character(value) => Self::Character(*value),
-            TokenKind::None => Self::None,
-            _ => unreachable!(),
-        }
-    }
-
     pub fn binary_operation(self, other: Self, operator: &Token) -> Operation {
         match operator.kind {
             TokenKind::Add => self.add(other, operator),
@@ -92,6 +93,42 @@ impl Value {
             TokenKind::Sub => self.neg(operator),
             TokenKind::Not => self.not(operator),
             _ => unreachable!(),
+        }
+    }
+
+    pub fn index(self, index: Self) -> Operation {
+        match (self, index) {
+            (Value::String(string), Value::Integer(i)) => {
+                if i >= 0 && i < string.len() as i32 {
+                    Ok(Value::Character(string.chars().nth(i as usize).unwrap()))
+                } else {
+                    todo!()
+                }
+            }
+            (Value::List(list), Value::Integer(i)) => {
+                let borrow_list = list.borrow();
+                if i >= 0 && i < borrow_list.len() as i32 {
+                    Ok(borrow_list[i as usize].clone())
+                } else {
+                    todo!()
+                }
+            }
+            _ => todo!(),
+        }
+    }
+
+    pub fn list_assign(self, index: Self, value: Self) -> Operation {
+        match (self, index) {
+            (Value::List(list), Value::Integer(i)) => {
+                let mut mut_list = list.borrow_mut();
+                if i >= 0 && i < mut_list.len() as i32 {
+                    mut_list[i as usize] = value;
+                    Ok(Value::None)
+                } else {
+                    todo!()
+                }
+            }
+            _ => todo!(),
         }
     }
 
@@ -267,6 +304,20 @@ impl Value {
             (Value::String(a), Value::String(b)) => Ok(Value::Boolean(a <= b)),
             (Value::Character(a), Value::Character(b)) => Ok(Value::Boolean(a <= b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
+        }
+    }
+}
+
+impl From<&Token> for Value {
+    fn from(value: &Token) -> Self {
+        match &value.kind {
+            TokenKind::Integer(value) => Self::Integer(*value),
+            TokenKind::Float(value) => Self::Float(*value),
+            TokenKind::Boolean(value) => Self::Boolean(*value),
+            TokenKind::String(value) => Self::String(value.to_string()),
+            TokenKind::Character(value) => Self::Character(*value),
+            TokenKind::None => Self::None,
+            _ => unreachable!(),
         }
     }
 }

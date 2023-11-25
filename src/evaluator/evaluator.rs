@@ -5,6 +5,8 @@ use crate::models::error::Runtime;
 use crate::parser::node::Node;
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token::TokenKind;
+use std::cell::RefCell;
+use std::rc::Rc;
 
 pub struct Evaluator<'a> {
     symbol_table: Box<SymbolTable<'a>>,
@@ -30,6 +32,7 @@ impl<'a> Evaluator<'a> {
     pub fn evaluate(&mut self, program: &Node) -> EvaluatorItem {
         match program {
             Node::Atom { value } => self.eval_atom(&value),
+            Node::List { values } => self.eval_list(&values),
             Node::BinaryOp {
                 right,
                 operator,
@@ -41,7 +44,13 @@ impl<'a> Evaluator<'a> {
                 value,
                 is_declaration,
             } => self.eval_assignment(identifier, value, is_declaration),
+            Node::ListAssignment {
+                identifier,
+                index,
+                value,
+            } => self.eval_list_assignment(identifier, index, value),
             Node::Access { identifier } => self.eval_access(identifier),
+            Node::Index { identifier, index } => self.eval_index(identifier, index),
             Node::Program { statements } => self.eval_program(statements),
             Node::If {
                 condition,
@@ -64,6 +73,14 @@ impl<'a> Evaluator<'a> {
 
     fn eval_atom(&mut self, value: &Token) -> EvaluatorItem {
         Ok(Value::from(value))
+    }
+
+    fn eval_list(&mut self, nodes: &Vec<Box<Node>>) -> EvaluatorItem {
+        let mut list = Vec::new();
+        for node in nodes.iter() {
+            list.push(self.evaluate(node)?);
+        }
+        Ok(Value::List(Rc::new(RefCell::new(list))))
     }
 
     fn eval_binary_op(&mut self, right: &Node, operator: &Token, left: &Node) -> EvaluatorItem {
@@ -98,6 +115,27 @@ impl<'a> Evaluator<'a> {
         Ok(Value::None)
     }
 
+    fn eval_list_assignment(
+        &mut self,
+        identifier: &Token,
+        index: &Node,
+        value: &Node,
+    ) -> EvaluatorItem {
+        let value = self.evaluate(value)?;
+        let index = self.evaluate(index)?;
+        if let TokenKind::Identifier(name) = &identifier.kind {
+            if let Some(list) = self.symbol_table.get(name) {
+                return Ok(list.list_assign(index, value)?);
+            } else {
+                return Err(Box::new(Runtime::UnknownIdentifier {
+                    identifier: identifier.clone(),
+                }));
+            }
+        }
+
+        Ok(Value::None)
+    }
+
     fn eval_access(&mut self, identifier: &Token) -> EvaluatorItem {
         if let TokenKind::Identifier(name) = &identifier.kind {
             if let Some(value) = self.symbol_table.get(name) {
@@ -107,7 +145,20 @@ impl<'a> Evaluator<'a> {
                 identifier: identifier.clone(),
             }));
         }
-        unreachable!()
+        panic!()
+    }
+
+    fn eval_index(&mut self, identifier: &Token, index: &Box<Node>) -> EvaluatorItem {
+        let index = self.evaluate(index)?;
+        if let TokenKind::Identifier(name) = &identifier.kind {
+            return match self.symbol_table.get(name) {
+                Some(value) => Ok(value.index(index)?),
+                None => Err(Box::new(Runtime::UnknownIdentifier {
+                    identifier: identifier.clone(),
+                })),
+            };
+        }
+        panic!()
     }
 
     fn eval_program(&mut self, statements: &Vec<Box<Node>>) -> EvaluatorItem {

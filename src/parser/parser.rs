@@ -100,25 +100,27 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_parameters(&mut self) -> Result<Vec<Box<Node>>, Box<dyn MonoError>> {
+    fn parse_parameters(
+        &mut self,
+        delimiter: TokenKind,
+    ) -> Result<Vec<Box<Node>>, Box<dyn MonoError>> {
         let mut parameters = Vec::new();
-        if matches!(self.tokenizer.peek(), Some(Ok(token)) if token.kind == TokenKind::RightParen) {
+        if matches!(self.tokenizer.peek(), Some(Ok(token)) if token.kind == delimiter) {
             return Ok(parameters);
         }
 
         loop {
             parameters.push(self.parse_bool_expr()?);
-
             match self.tokenizer.peek() {
-                Some(Ok(token)) => match token.kind {
-                    TokenKind::RightParen => break,
+                Some(Ok(token)) => match &token.kind {
+                    k if k == &delimiter => break,
                     TokenKind::Comma => {
                         self.tokenizer.next();
                     }
                     _ => {
                         return unexpected_token!(
                             self.tokenizer.next().unwrap()?,
-                            vec![TokenKind::RightParen, TokenKind::Comma]
+                            vec![delimiter, TokenKind::Comma]
                         )
                     }
                 },
@@ -198,6 +200,11 @@ impl<'a> Parser<'a> {
                 self.close_delimiter(token, TokenKind::RightParen)?;
                 Ok(bool_expr)
             }
+            TokenKind::LeftBracket => {
+                let values = self.parse_parameters(TokenKind::RightBracket)?;
+                self.close_delimiter(token, TokenKind::RightBracket)?;
+                Ok(Box::new(Node::List { values }))
+            }
             TokenKind::Integer(_)
             | TokenKind::Float(_)
             | TokenKind::Boolean(_)
@@ -207,6 +214,9 @@ impl<'a> Parser<'a> {
             TokenKind::Identifier(_) => match self.tokenizer.peek() {
                 Some(Ok(paren)) if paren.kind == TokenKind::LeftParen => {
                     self.parse_func_call(token)
+                }
+                Some(Ok(bracket)) if bracket.kind == TokenKind::LeftBracket => {
+                    self.parse_index(token)
                 }
                 _ => Ok(Box::new(Node::Access { identifier: token })),
             },
@@ -228,9 +238,16 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn parse_index(&mut self, identifier: Token) -> ParserItem {
+        let start = self.expect_token(TokenKind::LeftBracket)?;
+        let index = self.parse_expr()?;
+        self.close_delimiter(start, TokenKind::RightBracket)?;
+        Ok(Box::new(Node::Index { identifier, index }))
+    }
+
     fn parse_func_call(&mut self, identifier: Token) -> ParserItem {
         let start = self.expect_token(TokenKind::LeftParen)?;
-        let parameters = self.parse_parameters()?;
+        let parameters = self.parse_parameters(TokenKind::RightParen)?;
         self.close_delimiter(start, TokenKind::RightParen)?;
         Ok(Box::new(Node::FuncCall {
             identifier,
@@ -420,6 +437,18 @@ impl<'a> Parser<'a> {
             }
             Some(Ok(token)) if token.kind == TokenKind::LeftParen => {
                 self.parse_func_call(identifier)
+            }
+            Some(Ok(token)) if token.kind == TokenKind::LeftBracket => {
+                let start = self.expect_token(TokenKind::LeftBracket)?;
+                let index = self.parse_expr()?;
+                self.close_delimiter(start, TokenKind::RightBracket)?;
+                self.expect_token(TokenKind::Assignment)?;
+                let value = self.parse_bool_expr()?;
+                Ok(Box::new(Node::ListAssignment {
+                    identifier,
+                    index,
+                    value,
+                }))
             }
             Some(Ok(_)) => unexpected_token!(
                 self.tokenizer.next().unwrap()?,
