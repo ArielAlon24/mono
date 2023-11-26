@@ -6,6 +6,7 @@ use crate::parser::node::Node;
 use crate::tokenizer::token::Token;
 use crate::tokenizer::token::TokenKind;
 use std::cell::RefCell;
+use std::mem::discriminant;
 use std::rc::Rc;
 
 pub struct Evaluator<'a> {
@@ -125,7 +126,7 @@ impl<'a> Evaluator<'a> {
         let index = self.evaluate(index)?;
         if let TokenKind::Identifier(name) = &identifier.kind {
             if let Some(list) = self.symbol_table.get(name) {
-                return Ok(list.list_assign(index, value)?);
+                return Ok(list.list_assign(index, value, identifier)?);
             } else {
                 return Err(Box::new(Runtime::UnknownIdentifier {
                     identifier: identifier.clone(),
@@ -152,7 +153,7 @@ impl<'a> Evaluator<'a> {
         let index = self.evaluate(index)?;
         if let TokenKind::Identifier(name) = &identifier.kind {
             return match self.symbol_table.get(name) {
-                Some(value) => Ok(value.index(index)?),
+                Some(value) => Ok(value.index(index, identifier)?),
                 None => Err(Box::new(Runtime::UnknownIdentifier {
                     identifier: identifier.clone(),
                 })),
@@ -182,7 +183,12 @@ impl<'a> Evaluator<'a> {
         match result {
             Value::Boolean(true) => return Ok(self.evaluate(&block)?),
             Value::Boolean(false) => {}
-            _ => todo!(),
+            _ => {
+                return Err(Box::new(Runtime::InvalidValue {
+                    expected: Value::Boolean(false),
+                    found: result,
+                }))
+            }
         }
 
         if let Some(some_else_block) = else_block {
@@ -287,7 +293,7 @@ impl<'a> Evaluator<'a> {
                 }
             }
         }
-        unreachable!();
+        panic!();
     }
 
     fn eval_return(&mut self, value: &Box<Node>) -> EvaluatorItem {

@@ -152,6 +152,18 @@ pub enum Runtime {
         call: Token,
         expected: Vec<String>,
         found: Vec<Value>,
+    },
+    InvalidIndex {
+        identifier: Token,
+        index: Value,
+    },
+    NonIndexable {
+        identifier: Token,
+        index: Value,
+    },
+    InvalidValue {
+        expected: Value,
+        found: Value,
     }
 }
 
@@ -167,9 +179,9 @@ impl fmt::Display for Runtime {
                 left,
             } => {
                 if let Some(right) = right {
-                    write!(f, "Invalid binary operation detected. Operator `{:?}` was used with left value `{:?}` and right value `{:?}`.", operator.kind, right, left)
+                    write!(f, "Invalid binary operation detected. Operator `{}` was used with left value `{}` and right value `{}`.", operator, right, left)
                 } else {
-                    write!(f, "Invalid unary operation detected. Operator `{:?}` was used with value `{:?}`.", operator.kind, left)
+                    write!(f, "Invalid unary operation detected. Operator `{}` was used with value `{}`.", operator, left)
                 }
             }
             Self::UnknownIdentifier { identifier } => {
@@ -182,6 +194,15 @@ impl fmt::Display for Runtime {
                     call.start,
                     expected.iter().map(|p| format!("{}", p)).collect::<Vec<_>>().join(", ")
                 )
+            },
+            Self::InvalidIndex { index, identifier } => {
+                write!(f, "Invalid index `{}` for iterable '{}'.", index, identifier)
+            }
+            Self::NonIndexable { identifier, index } => {
+                write!(f, "Value '{}' isn't an iterable. But, was indexed with index `{}`.", identifier, index)
+            }
+            Self::InvalidValue { expected, found } => {
+                write!(f, "Invalid value encountered. Expected: `{}` but found `{}`.", expected.to_type(), found)
             }
         }
     }

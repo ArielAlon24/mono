@@ -67,6 +67,19 @@ impl fmt::Display for Value {
 type Operation = Result<Value, Box<dyn MonoError>>;
 
 impl Value {
+    pub fn to_type(&self) -> &'static str {
+        match self {
+            Value::Integer(_) => "Integer",
+            Value::Float(_) => "Float",
+            Value::Boolean(_) => "Boolean",
+            Value::String(_) => "String",
+            Value::Character(_) => "Character",
+            Value::List(_) => "List",
+            Value::Function { .. } => "Function",
+            Value::BuiltInFunction { .. } => "BuiltInFunction",
+            Value::None => "None",
+        }
+    }
     pub fn binary_operation(self, other: Self, operator: &Token) -> Operation {
         match operator.kind {
             TokenKind::Add => self.add(other, operator),
@@ -96,39 +109,52 @@ impl Value {
         }
     }
 
-    pub fn index(self, index: Self) -> Operation {
-        match (self, index) {
+    pub fn index(self, index: Self, identifier: &Token) -> Operation {
+        match (self, &index) {
             (Value::String(string), Value::Integer(i)) => {
-                if i >= 0 && i < string.len() as i32 {
-                    Ok(Value::Character(string.chars().nth(i as usize).unwrap()))
-                } else {
-                    todo!()
+                if i >= &0 && i < &(string.len() as i32) {
+                    return Ok(Value::Character(string.chars().nth(*i as usize).unwrap()));
                 }
+                Err(Box::new(Runtime::InvalidIndex {
+                    identifier: identifier.clone(),
+                    index,
+                }))
             }
             (Value::List(list), Value::Integer(i)) => {
                 let borrow_list = list.borrow();
-                if i >= 0 && i < borrow_list.len() as i32 {
-                    Ok(borrow_list[i as usize].clone())
-                } else {
-                    todo!()
+                if i >= &0 && i < &(borrow_list.len() as i32) {
+                    return Ok(borrow_list[*i as usize].clone());
                 }
+                Err(Box::new(Runtime::InvalidIndex {
+                    identifier: identifier.clone(),
+                    index,
+                }))
             }
-            _ => todo!(),
+            _ => Err(Box::new(Runtime::NonIndexable {
+                identifier: identifier.clone(),
+                index,
+            })),
         }
     }
 
-    pub fn list_assign(self, index: Self, value: Self) -> Operation {
-        match (self, index) {
+    pub fn list_assign(self, index: Self, value: Self, identifier: &Token) -> Operation {
+        match (self, &index) {
             (Value::List(list), Value::Integer(i)) => {
                 let mut mut_list = list.borrow_mut();
-                if i >= 0 && i < mut_list.len() as i32 {
-                    mut_list[i as usize] = value;
+                if i >= &0 && i < &(mut_list.len() as i32) {
+                    mut_list[*i as usize] = value;
                     Ok(Value::None)
                 } else {
-                    todo!()
+                    Err(Box::new(Runtime::InvalidIndex {
+                        identifier: identifier.clone(),
+                        index,
+                    }))
                 }
             }
-            _ => todo!(),
+            _ => Err(Box::new(Runtime::NonIndexable {
+                identifier: identifier.clone(),
+                index,
+            })),
         }
     }
 
@@ -175,7 +201,6 @@ impl Value {
             (Value::String(a), Value::Integer(b)) if b >= 0 => {
                 Ok(Value::String(a.repeat(b as usize)))
             }
-            (Value::String(_), Value::Integer(b)) if b < 0 => todo!(),
             (Value::Character(a), Value::Integer(b)) if b >= 0 => {
                 Ok(Value::String(a.to_string().repeat(b as usize)))
             }
@@ -212,7 +237,7 @@ impl Value {
             (Value::Integer(a), Value::Integer(b)) if b >= 0 => {
                 Ok(Value::Integer((a as f64).powi(b as i32) as i32))
             }
-            (Value::Integer(_), Value::Integer(_)) => todo!(),
+            (Value::Integer(a), Value::Integer(b)) => Ok(Value::Float((a as f32).powf(b as f32))),
             (Value::Integer(a), Value::Float(b)) => Ok(Value::Float((a as f32).powf(b))),
             (Value::Float(a), Value::Integer(b)) => Ok(Value::Float(a.powf(b as f32))),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.powf(b))),
