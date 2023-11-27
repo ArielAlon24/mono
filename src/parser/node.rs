@@ -1,4 +1,4 @@
-use crate::tokenizer::token::Token;
+use crate::{models::error::MonoError, tokenizer::token::Token};
 use std::fmt;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -201,5 +201,11 @@ impl Node {
 impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.format_tree(f, "", true, false)
+    }
+}
+
+impl From<Node> for Result<Box<Node>, Box<dyn MonoError>> {
+    fn from(value: Node) -> Self {
+        Ok(Box::new(value))
     }
 }

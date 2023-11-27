@@ -1,4 +1,4 @@
-use crate::models::error::MonoError;
+use super::EvaluatorItem;
 use crate::models::error::Runtime;
 use crate::parser::node::Node;
 use crate::tokenizer::token::Token;
@@ -64,8 +64,6 @@ impl fmt::Display for Value {
     }
 }
 
-type Operation = Result<Value, Box<dyn MonoError>>;
-
 impl Value {
     pub fn to_type(&self) -> &'static str {
         match self {
@@ -80,7 +78,7 @@ impl Value {
             Value::None => "None",
         }
     }
-    pub fn binary_operation(self, other: Self, operator: &Token) -> Operation {
+    pub fn binary_operation(self, other: Self, operator: &Token) -> EvaluatorItem {
         match operator.kind {
             TokenKind::Add => self.add(other, operator),
             TokenKind::Sub => self.sub(other, operator),
@@ -100,7 +98,7 @@ impl Value {
         }
     }
 
-    pub fn unary_operation(self, operator: &Token) -> Operation {
+    pub fn unary_operation(self, operator: &Token) -> EvaluatorItem {
         match operator.kind {
             TokenKind::Add => self.pos(operator),
             TokenKind::Sub => self.neg(operator),
@@ -109,35 +107,38 @@ impl Value {
         }
     }
 
-    pub fn index(self, index: Self, identifier: &Token) -> Operation {
+    pub fn index(self, index: Self, identifier: &Token) -> EvaluatorItem {
         match (self, &index) {
             (Value::String(string), Value::Integer(i)) => {
                 if i >= &0 && i < &(string.len() as i32) {
                     return Ok(Value::Character(string.chars().nth(*i as usize).unwrap()));
                 }
-                Err(Box::new(Runtime::InvalidIndex {
+                Runtime::InvalidIndex {
                     identifier: identifier.clone(),
                     index,
-                }))
+                }
+                .into()
             }
             (Value::List(list), Value::Integer(i)) => {
                 let borrow_list = list.borrow();
                 if i >= &0 && i < &(borrow_list.len() as i32) {
                     return Ok(borrow_list[*i as usize].clone());
                 }
-                Err(Box::new(Runtime::InvalidIndex {
+                Runtime::InvalidIndex {
                     identifier: identifier.clone(),
                     index,
-                }))
+                }
+                .into()
             }
-            _ => Err(Box::new(Runtime::NonIndexable {
+            _ => Runtime::NonIndexable {
                 identifier: identifier.clone(),
                 index,
-            })),
+            }
+            .into(),
         }
     }
 
-    pub fn list_assign(self, index: Self, value: Self, identifier: &Token) -> Operation {
+    pub fn list_assign(self, index: Self, value: Self, identifier: &Token) -> EvaluatorItem {
         match (self, &index) {
             (Value::List(list), Value::Integer(i)) => {
                 let mut mut_list = list.borrow_mut();
@@ -145,20 +146,22 @@ impl Value {
                     mut_list[*i as usize] = value;
                     Ok(Value::None)
                 } else {
-                    Err(Box::new(Runtime::InvalidIndex {
+                    Runtime::InvalidIndex {
                         identifier: identifier.clone(),
                         index,
-                    }))
+                    }
+                    .into()
                 }
             }
-            _ => Err(Box::new(Runtime::NonIndexable {
+            _ => Runtime::NonIndexable {
                 identifier: identifier.clone(),
                 index,
-            })),
+            }
+            .into(),
         }
     }
 
-    fn add(self, other: Self, operator: &Token) -> Operation {
+    fn add(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a + b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a + b)),
@@ -170,7 +173,7 @@ impl Value {
         }
     }
 
-    fn pos(self, operator: &Token) -> Operation {
+    fn pos(self, operator: &Token) -> EvaluatorItem {
         match self {
             Value::Integer(a) => Ok(Value::Integer(a)),
             Value::Float(a) => Ok(Value::Float(a)),
@@ -178,7 +181,7 @@ impl Value {
         }
     }
 
-    fn sub(self, other: Self, operator: &Token) -> Operation {
+    fn sub(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a - b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a - b)),
@@ -186,7 +189,7 @@ impl Value {
         }
     }
 
-    fn neg(self, operator: &Token) -> Operation {
+    fn neg(self, operator: &Token) -> EvaluatorItem {
         match self {
             Value::Integer(a) => Ok(Value::Integer(-a)),
             Value::Float(a) => Ok(Value::Float(-a)),
@@ -194,7 +197,7 @@ impl Value {
         }
     }
 
-    fn mul(self, other: Self, operator: &Token) -> Operation {
+    fn mul(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a * b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a * b)),
@@ -208,7 +211,7 @@ impl Value {
         }
     }
 
-    fn div(self, other: Self, operator: &Token) -> Operation {
+    fn div(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(_), Value::Integer(0)) => Err(Box::new(Runtime::DivisionByZero {
                 division: operator.clone(),
@@ -224,7 +227,7 @@ impl Value {
         }
     }
 
-    fn modulo(self, other: Self, operator: &Token) -> Operation {
+    fn modulo(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Integer(a % b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a % b)),
@@ -232,7 +235,7 @@ impl Value {
         }
     }
 
-    fn pow(self, other: Self, operator: &Token) -> Operation {
+    fn pow(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) if b >= 0 => {
                 Ok(Value::Integer((a as f64).powi(b as i32) as i32))
@@ -245,28 +248,28 @@ impl Value {
         }
     }
 
-    fn not(self, operator: &Token) -> Operation {
+    fn not(self, operator: &Token) -> EvaluatorItem {
         match self {
             Value::Boolean(a) => Ok(Value::Boolean(!a)),
             left => invalid_operation!(operator, None, left),
         }
     }
 
-    fn and(self, other: Self, operator: &Token) -> Operation {
+    fn and(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a && b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
 
-    fn or(self, other: Self, operator: &Token) -> Operation {
+    fn or(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Boolean(a), Value::Boolean(b)) => Ok(Value::Boolean(a || b)),
             (right, left) => invalid_operation!(operator, Some(right), left),
         }
     }
 
-    fn equals(self, other: Self, operator: &Token) -> Operation {
+    fn equals(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a == b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a == b)),
@@ -279,7 +282,7 @@ impl Value {
         }
     }
 
-    fn not_equals(self, other: Self, operator: &Token) -> Operation {
+    fn not_equals(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a != b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a != b)),
@@ -292,7 +295,7 @@ impl Value {
         }
     }
 
-    fn greater(self, other: Self, operator: &Token) -> Operation {
+    fn greater(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a > b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a > b)),
@@ -302,7 +305,7 @@ impl Value {
         }
     }
 
-    fn greater_eq(self, other: Self, operator: &Token) -> Operation {
+    fn greater_eq(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a >= b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a >= b)),
@@ -312,7 +315,7 @@ impl Value {
         }
     }
 
-    fn less_than(self, other: Self, operator: &Token) -> Operation {
+    fn less_than(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a < b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a < b)),
@@ -322,7 +325,7 @@ impl Value {
         }
     }
 
-    fn less_than_eq(self, other: Self, operator: &Token) -> Operation {
+    fn less_than_eq(self, other: Self, operator: &Token) -> EvaluatorItem {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Ok(Value::Boolean(a <= b)),
             (Value::Float(a), Value::Float(b)) => Ok(Value::Boolean(a <= b)),

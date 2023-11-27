@@ -12,6 +12,7 @@ As Mono is still in its early stages, not all planned features have been impleme
 - [x] If-Else statements.
 - [x] While statements.
 - [x] Functions.
+- [x] Lists.
 
 ## Cli
 

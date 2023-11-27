@@ -1,10 +1,37 @@
+use crate::parser::node::Node;
 use super::position::Position;
 use crate::evaluator::value::Value;
 use crate::tokenizer::token::{Token, TokenKind};
 use std::fmt;
 
+#[macro_export]
+macro_rules! internal_err {
+    ($MESSAGE:expr) => {
+        panic!("{}", $MESSAGE)
+    };
+}
+
+
 pub trait MonoError: fmt::Display {
     fn kind(&self) -> &str;
+}
+
+impl From<Syntax> for Option<Result<Token, Box<dyn MonoError>>> {
+    fn from(value: Syntax) -> Self {
+        Some(Err(Box::new(value)))
+    }
+}
+
+impl From<Syntax> for Result<Box<Node>, Box<dyn MonoError>> {
+    fn from(value: Syntax) -> Self {
+        Err(Box::new(value))
+    }
+}
+
+impl From<Runtime> for Result<Value, Box<dyn MonoError>> {
+    fn from(value: Runtime) -> Self {
+        Err(Box::new(value))
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -133,6 +160,7 @@ impl MonoError for Syntax {
         "SyntaxError"
     }
 }
+
 
 #[derive(Debug, PartialEq)]
 pub enum Runtime {

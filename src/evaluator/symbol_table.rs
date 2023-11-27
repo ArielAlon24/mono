@@ -3,39 +3,60 @@ use crate::evaluator::builtins::builtin;
 use crate::evaluator::value::Value;
 use std::collections::HashMap;
 
-pub struct SymbolTable<'a> {
-    symbol_table: HashMap<String, Value>,
-    parent: Option<&'a Box<SymbolTable<'a>>>,
+// TODO: Make the symbol table, stack based.
+pub struct SymbolTable {
+    tables: Vec<HashMap<String, Value>>,
 }
 
-impl<'a> SymbolTable<'a> {
-    pub fn new(parent: Option<&'a Box<SymbolTable>>) -> Self {
+impl SymbolTable {
+    pub fn new() -> Self {
         Self {
-            symbol_table: HashMap::new(),
-            parent: parent,
+            tables: vec![HashMap::new()],
         }
     }
 
     pub fn insert(&mut self, identifier: String, value: Value) {
-        self.symbol_table.insert(identifier, value);
+        if self.tables.is_empty() {
+            panic!("Internal Error: Symbol Table dropped.")
+        }
+        self.tables.first_mut().unwrap().insert(identifier, value);
     }
 
     pub fn insert_tuple(&mut self, (identifier, value): (String, Value)) {
-        self.symbol_table.insert(identifier, value);
+        self.insert(identifier, value);
     }
 
     pub fn get(&self, identifier: &str) -> Option<Value> {
-        match self.symbol_table.get(identifier) {
-            Some(value) => Some(value.clone()),
-            None => match &self.parent {
-                Some(parent) => parent.get(identifier),
-                None => None,
-            },
+        for table in &self.tables {
+            if let Some(value) = table.get(identifier) {
+                return Some(value.clone());
+            }
         }
+        None
+    }
+
+    pub fn get_mut(&mut self, identifier: &str) -> Option<&mut Value> {
+        for table in &mut self.tables {
+            if let Some(value) = table.get_mut(identifier) {
+                return Some(value);
+            }
+        }
+        None
     }
 
     pub fn contains(&mut self, identifier: &str) -> bool {
         return self.get(identifier) != None;
+    }
+
+    pub fn scope(&mut self) {
+        self.tables.push(HashMap::new());
+    }
+
+    pub fn unscope(&mut self) {
+        if self.tables.len() <= 1 {
+            panic!("Internal Error: Tried to drop the main symbol table.")
+        }
+        self.tables.remove(self.tables.len() - 1);
     }
 
     pub fn add_builtins(&mut self) {

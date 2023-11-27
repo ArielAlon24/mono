@@ -3,11 +3,10 @@ pub mod models;
 pub mod parser;
 pub mod tokenizer;
 
-use crate::evaluator::evaluator::Evaluator;
 use crate::evaluator::value::Value;
-
-use crate::parser::parser::Parser;
-use crate::tokenizer::tokenizer::Tokenizer;
+use crate::evaluator::Evaluator;
+use crate::parser::Parser;
+use crate::tokenizer::Tokenizer;
 use colored::*;
 
 macro_rules! ereport {

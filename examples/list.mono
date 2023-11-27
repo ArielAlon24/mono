@@ -1,6 +1,0 @@
-
-
-
-let a = "Test"
-
-println(a[2])
