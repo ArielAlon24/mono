@@ -1,7 +1,6 @@
 let X = 'X'
 let O = 'O'
 
-
 let render(board) => {
     println("┌───┬───┬───┐")
     println("│ " + board[0] + " │ " + board[1] + " │ " + board[2] + " │")
@@ -50,8 +49,7 @@ let main() => {
             render(board)
             current = change(current)
         }
-    }
-    
+    } 
 }
 
 main()
